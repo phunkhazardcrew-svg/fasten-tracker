@@ -329,6 +329,66 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   border:1px solid rgba(96,165,250,.25);border-radius:var(--radius-sm);color:#60a5fa;font-size:13px;
   font-weight:500;cursor:pointer;transition:all .15s;width:100%;justify-content:center;margin-top:10px}
 .breath-btn:active{background:rgba(96,165,250,.2);transform:scale(.98)}
+
+/* Autophagy Meter */
+.autophagy-meter{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px}
+.autophagy-meter .card-title{margin-bottom:10px}
+.autophagy-bar{height:18px;background:var(--surface3);border-radius:9px;overflow:hidden;position:relative}
+.autophagy-fill{height:100%;border-radius:9px;background:linear-gradient(90deg,#f87171,#fbbf24 30%,#6ee7b7 60%,#34d399);
+  transition:width 1s ease;position:relative}
+.autophagy-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);border-radius:9px}
+.autophagy-label{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px}
+.autophagy-pct{font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
+.autophagy-desc{color:var(--text2);font-size:12px;margin-top:4px;line-height:1.4}
+
+/* Ambient Sounds */
+.ambient-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ambient-btn{padding:12px 8px;background:var(--surface2);border:2px solid transparent;border-radius:var(--radius-sm);
+  text-align:center;font-size:12px;cursor:pointer;transition:all .15s}
+.ambient-btn:active{transform:scale(.95)}
+.ambient-btn.playing{border-color:var(--accent);background:rgba(110,231,183,.08);color:var(--accent)}
+.ambient-btn .amb-ico{font-size:24px;display:block;margin-bottom:4px}
+
+/* Emergency Card */
+.emergency-card{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:var(--radius);
+  padding:16px;margin-top:14px}
+.emergency-card .emer-btn{width:100%;padding:12px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);
+  border-radius:var(--radius-sm);color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.emergency-card .emer-btn:active{background:rgba(248,113,113,.25);transform:scale(.98)}
+.emergency-expanded{margin-top:12px;animation:fadeIn .25s ease}
+.emergency-expanded .emer-check{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;color:var(--text2)}
+.emergency-expanded .emer-check input{width:18px;height:18px;accent-color:var(--danger);flex-shrink:0}
+.emergency-expanded .emer-stop{width:100%;padding:14px;background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);
+  font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:all .15s}
+.emergency-expanded .emer-stop:active{opacity:.8;transform:scale(.98)}
+.emergency-expanded .emer-warning{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);
+  border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px;font-size:12px;color:var(--danger);line-height:1.5}
+
+/* Sleep Tracker */
+.sleep-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sleep-row label{font-size:13px;color:var(--text2);min-width:80px}
+.sleep-row input[type="number"]{width:80px;text-align:center;flex-shrink:0}
+.star-row{display:flex;gap:4px}
+.star-btn{font-size:28px;opacity:.25;cursor:pointer;transition:opacity .15s,transform .15s;background:none;border:none;padding:2px}
+.star-btn.filled{opacity:1}
+.star-btn:active{transform:scale(1.2)}
+
+/* Light Theme */
+.light-theme{
+  --bg:#f5f5f7;--surface:#ffffff;--surface2:#f0f0f5;--surface3:#e5e5ea;
+  --border:#d1d1d6;--text:#1c1c1e;--text2:#636366;--text3:#aeaeb2;
+  --accent:#059669;--accent2:#10b981;--warn:#d97706;--danger:#dc2626;
+}
+.light-theme .tab-bar{background:rgba(255,255,255,.96)}
+.light-theme #toast{box-shadow:0 8px 32px rgba(0,0,0,.15)}
+
+/* Mood Chart */
+#moodChart{width:100%;height:200px;display:block;border-radius:var(--radius-sm);background:var(--surface2);margin-top:8px}
+
+/* Wochenbericht */
+.report-card{background:var(--surface2);border-radius:var(--radius-sm);padding:16px;margin-top:12px;
+  font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-line}
+.report-card strong{color:var(--text);font-weight:600}
 </style>
 </head>
 <body>
@@ -478,7 +538,15 @@ const ACHIEVEMENTS = [
   {id:'streak3',name:'3er-Serie',emoji:'🔥',desc:'3 Fasten hintereinander geschafft',
    check:function(){return calcStreak().best>=3}},
   {id:'streak5',name:'Serien-Meister',emoji:'🔥',desc:'5 Fasten hintereinander geschafft',
-   check:function(){return calcStreak().best>=5}}
+   check:function(){return calcStreak().best>=5}},
+  {id:'sleep8',name:'Schlaf-Champion',emoji:'😴',desc:'8+ Stunden Schlaf geloggt',
+   check:function(s){var sl=s.sleep||{};return Object.values(sl).some(function(v){return v && v.hours>=8})}},
+  {id:'alltrack',name:'Perfekter Tag',emoji:'🌟',desc:'Alle Tracker an einem Tag genutzt',
+   check:function(s){var keys=Object.keys(s.water||{});return keys.some(function(k){return s.water[k]>0 && s.moods[k] && s.weight[k] && s.journal[k] && s.journal[k].length>0})}},
+  {id:'h168',name:'Wochen-Titan',emoji:'💎',desc:'168h (7 volle Tage) gefastet',
+   check:function(s,ms){return ms>=168*3600000}},
+  {id:'water7',name:'7-Tage-Hydration',emoji:'🌊',desc:'7 Tage in Folge Wasserziel erreicht',
+   check:function(s){var w=s.water||{};var keys=Object.keys(w).sort().slice(-7);if(keys.length<7)return false;return keys.every(function(k){return w[k]>=s.waterGoal})}}
 ];
 
 const SYMPTOMS = [
@@ -611,7 +679,8 @@ function defaultState(){
     soundType:'chime',
     dailyMealCost:15, dailyCalories:2000,
     tab:'timer', mseed:0,
-    history:[], achievements:{}
+    history:[], achievements:{},
+    sleep:{}, lightTheme:false
   };
 }
 
@@ -677,6 +746,112 @@ function playChime(){
       o2.start(now + .05); o2.stop(now + 1.6);
     }
   } catch(e) {}
+}
+
+/* ===== AMBIENT SOUNDS ===== */
+var ambientNodes = null;
+var ambientType = '';
+
+function stopAmbient(){
+  if (ambientNodes) {
+    try {
+      if (ambientNodes.gain) { ambientNodes.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3); }
+      setTimeout(function(){
+        if (ambientNodes) {
+          if (ambientNodes.sources) ambientNodes.sources.forEach(function(s){ try{s.stop();}catch(e){} });
+          if (ambientNodes.gain) try{ambientNodes.gain.disconnect();}catch(e){}
+          ambientNodes = null;
+        }
+      }, 400);
+    } catch(e) { ambientNodes = null; }
+  }
+  ambientType = '';
+  var btns = document.querySelectorAll('.ambient-btn');
+  btns.forEach(function(b){ b.classList.remove('playing'); });
+}
+
+function startAmbient(type){
+  if (ambientType === type) { stopAmbient(); return; }
+  stopAmbient();
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.25;
+    masterGain.connect(audioCtx.destination);
+    var sources = [];
+
+    if (type === 'rain') {
+      var bufSize = 2 * audioCtx.sampleRate;
+      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = buf; noise.loop = true;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 0.7;
+      noise.connect(bp); bp.connect(masterGain);
+      noise.start();
+      sources.push(noise);
+    } else if (type === 'ocean') {
+      var bufSize2 = 2 * audioCtx.sampleRate;
+      var buf2 = audioCtx.createBuffer(1, bufSize2, audioCtx.sampleRate);
+      var data2 = buf2.getChannelData(0);
+      for (var j = 0; j < bufSize2; j++) data2[j] = Math.random() * 2 - 1;
+      var noise2 = audioCtx.createBufferSource();
+      noise2.buffer = buf2; noise2.loop = true;
+      var lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 400; lp.Q.value = 1;
+      var modGain = audioCtx.createGain();
+      modGain.gain.value = 0;
+      var lfo = audioCtx.createOscillator();
+      lfo.type = 'sine'; lfo.frequency.value = 0.12;
+      var lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 0.3;
+      lfo.connect(lfoGain); lfoGain.connect(modGain.gain);
+      noise2.connect(lp); lp.connect(modGain); modGain.connect(masterGain);
+      modGain.gain.value = 0.7;
+      noise2.start(); lfo.start();
+      sources.push(noise2, lfo);
+    } else if (type === 'forest') {
+      var bufSize3 = 2 * audioCtx.sampleRate;
+      var buf3 = audioCtx.createBuffer(1, bufSize3, audioCtx.sampleRate);
+      var data3 = buf3.getChannelData(0);
+      for (var k = 0; k < bufSize3; k++) data3[k] = Math.random() * 2 - 1;
+      var noise3 = audioCtx.createBufferSource();
+      noise3.buffer = buf3; noise3.loop = true;
+      var hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 2000; hp.Q.value = 0.5;
+      var hpGain = audioCtx.createGain();
+      hpGain.gain.value = 0.4;
+      noise3.connect(hp); hp.connect(hpGain); hpGain.connect(masterGain);
+      noise3.start();
+      sources.push(noise3);
+      // Bird chirps via interval
+      var chirpInterval = setInterval(function(){
+        if (ambientType !== 'forest') { clearInterval(chirpInterval); return; }
+        try {
+          var now = audioCtx.currentTime;
+          var osc = audioCtx.createOscillator();
+          var cg = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2400 + Math.random() * 1600, now);
+          osc.frequency.linearRampToValueAtTime(3000 + Math.random() * 1000, now + 0.08);
+          osc.frequency.linearRampToValueAtTime(2200 + Math.random() * 800, now + 0.15);
+          cg.gain.setValueAtTime(0, now);
+          cg.gain.linearRampToValueAtTime(0.06, now + 0.02);
+          cg.gain.linearRampToValueAtTime(0, now + 0.18);
+          osc.connect(cg); cg.connect(masterGain);
+          osc.start(now); osc.stop(now + 0.2);
+        } catch(e){}
+      }, 1800 + Math.random() * 3000);
+    }
+
+    ambientNodes = {gain: masterGain, sources: sources};
+    ambientType = type;
+    var btns = document.querySelectorAll('.ambient-btn');
+    btns.forEach(function(b){ b.classList.toggle('playing', b.dataset.ambient === type); });
+  } catch(e) { ambientType = ''; ambientNodes = null; }
 }
 
 /* ===== BREATHING EXERCISE ===== */
@@ -1188,6 +1363,170 @@ function renderTab(){
   }
 }
 
+/* ===== AUTOPHAGY LEVEL ===== */
+function getAutophagyLevel(hours){
+  if (hours >= 72) return {pct:95 + Math.min((hours-72)/48,1)*5, label:'Maximum', desc:'Volle Regeneration — maximale zelluläre Erneuerung erreicht'};
+  if (hours >= 48) return {pct:85 + (hours-48)/24*10, label:'Peak', desc:'Maximale Autophagie — intensive Stammzell-Aktivierung'};
+  if (hours >= 24) return {pct:65 + (hours-24)/24*20, label:'Hoch', desc:'Intensive Reinigung — beschädigte Zellen werden abgebaut'};
+  if (hours >= 16) return {pct:40 + (hours-16)/8*25, label:'Aktiv', desc:'Zellerneuerung aktiv — Autophagie arbeitet effektiv'};
+  if (hours >= 12) return {pct:15 + (hours-12)/4*25, label:'Steigend', desc:'Autophagie beginnt — erste Reinigungsprozesse starten'};
+  return {pct:5 + hours/12*10, label:'Minimal', desc:'Verdauung läuft noch — Körper verarbeitet Nahrung'};
+}
+
+/* ===== MOOD CHART ===== */
+function drawMoodChart(){
+  var canvas = document.getElementById('moodChart');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var moodMap = {'Stark':5,'Motiviert':5,'Ruhig':4,'Kämpfe':3,'Müde':2,'Schwer':1};
+  var moodColors = {'Stark':'#6ee7b7','Motiviert':'#fbbf24','Ruhig':'#60a5fa','Kämpfe':'#f472b6','Müde':'#a78bfa','Schwer':'#f87171'};
+  var days = [];
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    var key = d.toISOString().slice(0,10);
+    var mood = (S.moods || {})[key] || null;
+    days.push({label: d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}).slice(0,5), mood: mood, val: mood ? (moodMap[mood] || 3) : null, color: mood ? (moodColors[mood] || '#8888a0') : null});
+  }
+
+  var hasData = days.some(function(d){ return d.val !== null; });
+  if (!hasData) {
+    ctx.fillStyle = '#55556a';
+    ctx.font = '14px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Noch keine Stimmungsdaten', W / 2, H / 2);
+    return;
+  }
+
+  var pad = {l:40, r:20, t:25, b:35};
+  var gw = W - pad.l - pad.r;
+  var gh = H - pad.t - pad.b;
+
+  // Grid lines
+  ctx.strokeStyle = '#222228';
+  ctx.lineWidth = 1;
+  var labels = ['','Schwer','Müde','Kämpfe','Ruhig','Stark'];
+  for (var g = 1; g <= 5; g++) {
+    var gy = pad.t + gh * (1 - (g - 1) / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(W - pad.r, gy); ctx.stroke();
+    ctx.fillStyle = '#55556a'; ctx.font = '9px DM Sans, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(labels[g] || '', pad.l - 6, gy + 3);
+  }
+
+  // Draw line connecting points
+  var pts = [];
+  days.forEach(function(d, idx){
+    if (d.val !== null) {
+      var x = pad.l + (idx / 13) * gw;
+      var y = pad.t + gh * (1 - (d.val - 1) / 4);
+      pts.push({x:x, y:y, color:d.color, mood:d.mood});
+    }
+  });
+
+  if (pts.length >= 2) {
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(110,231,183,0.4)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    pts.forEach(function(p, i){ if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+    ctx.stroke();
+  }
+
+  // Dots with mood colors
+  pts.forEach(function(p){
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.strokeStyle = '#111114';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // Date labels (every other day to avoid overlap)
+  ctx.fillStyle = '#55556a'; ctx.font = '9px DM Sans, sans-serif'; ctx.textAlign = 'center';
+  days.forEach(function(d, idx){
+    if (idx % 2 === 0) {
+      var x = pad.l + (idx / 13) * gw;
+      ctx.fillText(d.label, x, H - 8);
+    }
+  });
+}
+
+/* ===== WOCHENBERICHT ===== */
+function generateWeeklyReport(){
+  var lines = [];
+  lines.push('--- WOCHENBERICHT ---\n');
+  var today = new Date();
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(today); d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0,10));
+  }
+
+  // Water
+  var waterSum = 0, waterDays = 0;
+  days.forEach(function(k){ var v = (S.water||{})[k]; if (v > 0) { waterSum += v; waterDays++; } });
+  var waterAvg = waterDays > 0 ? (waterSum / waterDays).toFixed(1) : 0;
+  lines.push('💧 Wasser: Ø ' + waterAvg + ' Gläser/Tag (' + waterDays + ' von 7 Tagen getrackt)');
+
+  // Mood distribution
+  var moodCount = {};
+  days.forEach(function(k){ var m = (S.moods||{})[k]; if (m) { moodCount[m] = (moodCount[m]||0) + 1; } });
+  var moodParts = [];
+  Object.keys(moodCount).forEach(function(m){ moodParts.push(m + ': ' + moodCount[m] + 'x'); });
+  lines.push('😊 Stimmung: ' + (moodParts.length > 0 ? moodParts.join(', ') : 'Keine Einträge'));
+
+  // Weight
+  var wKeys = Object.keys(S.weight||{}).filter(function(k){ return days.indexOf(k) >= 0; }).sort();
+  if (wKeys.length >= 2) {
+    var wFirst = S.weight[wKeys[0]];
+    var wLast = S.weight[wKeys[wKeys.length-1]];
+    var wDelta = wLast - wFirst;
+    lines.push('⚖️ Gewicht: ' + wFirst.toFixed(1) + ' → ' + wLast.toFixed(1) + ' kg (' + (wDelta >= 0 ? '+' : '') + wDelta.toFixed(1) + ' kg)');
+  } else if (wKeys.length === 1) {
+    lines.push('⚖️ Gewicht: ' + S.weight[wKeys[0]].toFixed(1) + ' kg (nur 1 Eintrag)');
+  } else {
+    lines.push('⚖️ Gewicht: Keine Einträge');
+  }
+
+  // Symptoms
+  var symCount = {};
+  days.forEach(function(k){ var syms = (S.symptoms||{})[k] || []; syms.forEach(function(s){ symCount[s] = (symCount[s]||0) + 1; }); });
+  var symParts = [];
+  Object.keys(symCount).sort(function(a,b){ return symCount[b] - symCount[a]; }).forEach(function(s){ symParts.push(s + ': ' + symCount[s] + 'x'); });
+  lines.push('📋 Symptome: ' + (symParts.length > 0 ? symParts.join(', ') : 'Keine'));
+
+  // Sleep
+  var sleepSum = 0, sleepDays = 0, qualSum = 0, qualDays = 0;
+  days.forEach(function(k){ var sl = (S.sleep||{})[k]; if (sl && sl.hours > 0) { sleepSum += sl.hours; sleepDays++; } if (sl && sl.quality > 0) { qualSum += sl.quality; qualDays++; } });
+  if (sleepDays > 0) {
+    lines.push('😴 Schlaf: Ø ' + (sleepSum / sleepDays).toFixed(1) + 'h' + (qualDays > 0 ? ' | Qualität: ' + (qualSum / qualDays).toFixed(1) + '/5' : ''));
+  } else {
+    lines.push('😴 Schlaf: Keine Einträge');
+  }
+
+  // Fasting hours
+  var info = getFastInfo();
+  var fastHours = 0;
+  if (info.active && info.started && info.type === 'continuous') {
+    fastHours += info.elapsed / 3600000;
+  }
+  (S.history||[]).forEach(function(h){
+    try {
+      var endD = new Date(h.endDate);
+      var weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+      if (endD >= weekAgo) fastHours += h.duration / 3600000;
+    } catch(e){}
+  });
+  lines.push('⏱ Fasten: ~' + Math.round(fastHours) + 'h in dieser Woche');
+
+  lines.push('\n--- Erstellt am ' + today.toLocaleDateString('de-DE') + ' ---');
+  return lines.join('\n');
+}
+
 /* ===== TIMER TAB ===== */
 function renderTimer(c){
   var info = getFastInfo();
@@ -1279,6 +1618,24 @@ function renderTimer(c){
   html += '<div class="phase-desc">' + info.phase.desc + '</div>';
   html += '<div class="phase-tip">' + info.phase.tip + '</div></div>';
 
+  // Autophagy Meter
+  if (info.elapsedH !== undefined) {
+    var aLvl = getAutophagyLevel(info.elapsedH);
+    var aPct = Math.min(Math.round(aLvl.pct), 100);
+    html += '<div class="autophagy-meter card"><div class="card-title">🧬 Autophagie-Meter</div>';
+    html += '<div class="autophagy-bar"><div class="autophagy-fill" style="width:' + aPct + '%"></div></div>';
+    html += '<div class="autophagy-label"><span>' + aLvl.label + '</span><span class="autophagy-pct">' + aPct + '%</span></div>';
+    html += '<div class="autophagy-desc">' + aLvl.desc + '</div></div>';
+  }
+
+  // Ambient Sounds
+  html += '<div class="card"><div class="card-title">🎵 Ambient Sounds</div>';
+  html += '<div class="ambient-grid">';
+  html += '<button class="ambient-btn' + (ambientType === 'rain' ? ' playing' : '') + '" data-ambient="rain"><span class="amb-ico">🌧</span>Regen</button>';
+  html += '<button class="ambient-btn' + (ambientType === 'ocean' ? ' playing' : '') + '" data-ambient="ocean"><span class="amb-ico">🌊</span>Ozean</button>';
+  html += '<button class="ambient-btn' + (ambientType === 'forest' ? ' playing' : '') + '" data-ambient="forest"><span class="amb-ico">🌲</span>Wald</button>';
+  html += '</div></div>';
+
   // Quick Water + Daily Summary
   var td = todayStr();
   var todayWater = S.water[td] || 0;
@@ -1312,6 +1669,18 @@ function renderTimer(c){
   html += '<button class="refresh-btn" id="refreshQ">🔄</button>';
   html += '<em>\u201E' + getSeededQuote() + '\u201C</em></div>';
   html += '<button class="breath-btn" id="breathBtn">🫁 Hunger? Atemübung starten (4-7-8)</button></div>';
+
+  // Emergency Card
+  html += '<div class="emergency-card" id="emergencyCard">';
+  html += '<button class="emer-btn" id="emerBtn">⚠️ Mir geht es schlecht</button>';
+  html += '<div class="emergency-expanded" id="emerExpanded" style="display:none">';
+  html += '<div style="font-size:14px;font-weight:600;color:var(--danger);margin-bottom:8px">Schnell-Check:</div>';
+  html += '<div class="emer-check"><input type="checkbox" id="emerChk1"><label for="emerChk1">Hast du Elektrolyte genommen? (Salz, Kalium, Magnesium)</label></div>';
+  html += '<div class="emer-check"><input type="checkbox" id="emerChk2"><label for="emerChk2">Genug Wasser getrunken? (mind. 2-3L pro Tag)</label></div>';
+  html += '<div class="emer-check"><input type="checkbox" id="emerChk3"><label for="emerChk3">Ist der Schwindel nur beim Aufstehen? (Langsam aufstehen!)</label></div>';
+  html += '<div class="emer-warning">🔴 <strong>Sofort abbrechen bei:</strong> Starke Brustschmerzen, Ohnmacht, Verwirrtheit, anhaltendes Erbrechen, Atemnot. Im Zweifel IMMER abbrechen — deine Gesundheit geht vor!</div>';
+  html += '<button class="emer-stop" id="emerStop">🛑 Fasten sofort beenden</button>';
+  html += '</div></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -1348,6 +1717,31 @@ function renderTimer(c){
   if (bBtn) {
     bBtn.addEventListener('click', function(){
       $('breathOverlay').classList.add('show');
+    });
+  }
+
+  // Ambient sound buttons
+  c.querySelectorAll('.ambient-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      startAmbient(btn.dataset.ambient);
+    });
+  });
+
+  // Emergency card
+  var emerBtn = c.querySelector('#emerBtn');
+  var emerExpanded = c.querySelector('#emerExpanded');
+  if (emerBtn && emerExpanded) {
+    emerBtn.addEventListener('click', function(){
+      emerExpanded.style.display = emerExpanded.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+  var emerStop = c.querySelector('#emerStop');
+  if (emerStop) {
+    emerStop.addEventListener('click', function(){
+      if (confirm('Fasten wirklich sofort beenden?')) {
+        stopAmbient();
+        endFast();
+      }
     });
   }
 }
@@ -1408,6 +1802,20 @@ function renderTrack(c){
   });
   html += '</div></div>';
 
+  // Sleep Tracker
+  var curSleep = S.sleep[d] || {};
+  var sleepHours = curSleep.hours || '';
+  var sleepQuality = curSleep.quality || 0;
+  html += '<div class="card"><div class="card-title">😴 Schlaf</div>';
+  html += '<div class="sleep-row"><label>Stunden:</label>';
+  html += '<input type="number" id="sleepHours" placeholder="h" step="0.5" min="0" max="14" value="' + sleepHours + '"></div>';
+  html += '<div class="sleep-row"><label>Qualität:</label><div class="star-row">';
+  for (var si = 1; si <= 5; si++) {
+    html += '<button class="star-btn' + (si <= sleepQuality ? ' filled' : '') + '" data-star="' + si + '">⭐</button>';
+  }
+  html += '</div></div>';
+  html += '<button class="btn btn-sm btn-accent" id="sleepSave" style="margin-top:6px">💾 Speichern</button></div>';
+
   // Elektrolyte
   html += '<div class="card"><div class="card-title">⚡ Elektrolyte</div>';
   ELECS.forEach(function(e){
@@ -1465,6 +1873,27 @@ function renderTrack(c){
       b.classList.toggle('sel');
     });
   });
+
+  // Sleep tracker
+  var sleepQualityVal = sleepQuality;
+  c.querySelectorAll('.star-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      sleepQualityVal = parseInt(btn.dataset.star);
+      c.querySelectorAll('.star-btn').forEach(function(x){ x.classList.toggle('filled', parseInt(x.dataset.star) <= sleepQualityVal); });
+    });
+  });
+  var sleepSaveBtn = c.querySelector('#sleepSave');
+  if (sleepSaveBtn) {
+    sleepSaveBtn.addEventListener('click', function(){
+      var hInput = c.querySelector('#sleepHours');
+      var hVal = hInput ? parseFloat(hInput.value) : 0;
+      if (!S.sleep[d]) S.sleep[d] = {};
+      S.sleep[d] = {hours: hVal || 0, quality: sleepQualityVal};
+      save(); checkAchievements();
+      sleepSaveBtn.textContent = '✅ Gespeichert!';
+      setTimeout(function(){ sleepSaveBtn.textContent = '💾 Speichern'; }, 1500);
+    });
+  }
 
   c.querySelectorAll('.elec-check').forEach(function(cb){
     cb.addEventListener('change', function(){
@@ -1612,6 +2041,10 @@ function renderStats(c){
     html += '</div></div>';
   }
 
+  // Mood Chart (14 days)
+  html += '<div class="card"><div class="card-title">😊 Stimmungsverlauf (14 Tage)</div>';
+  html += '<canvas id="moodChart" width="600" height="200"></canvas></div>';
+
   // Water chart (last 7 days)
   html += '<div class="card"><div class="card-title">💧 Wasser (7 Tage)</div>';
   html += '<canvas id="waterChart" width="600" height="200"></canvas></div>';
@@ -1700,17 +2133,35 @@ function renderStats(c){
   html += '</div></div>';
 
   // Share button
+  // Wochenbericht
+  html += '<div class="card"><div class="card-title">📋 Wochenbericht</div>';
+  html += '<button class="btn btn-surface btn-block" id="reportBtn">📋 Wochenbericht generieren</button>';
+  html += '<div id="reportOutput"></div></div>';
+
   html += '<div style="text-align:center;margin:16px 0"><button class="btn btn-accent btn-sm" id="shareBtn" style="border-radius:50px;padding:12px 28px">📤 Fortschritt teilen</button></div>';
 
   html += '</div>';
   c.innerHTML = html;
 
-  // Draw water chart
+  // Draw water chart + mood chart
   drawWaterBarChart();
+  setTimeout(drawMoodChart, 60);
 
   // Share listener
   var shareBtn = c.querySelector('#shareBtn');
   if (shareBtn) shareBtn.addEventListener('click', shareProgress);
+
+  // Wochenbericht listener
+  var reportBtn = c.querySelector('#reportBtn');
+  if (reportBtn) {
+    reportBtn.addEventListener('click', function(){
+      var report = generateWeeklyReport();
+      var output = c.querySelector('#reportOutput');
+      if (output) {
+        output.innerHTML = '<div class="report-card">' + escHtml(report) + '</div>';
+      }
+    });
+  }
 }
 
 function drawWaterBarChart(){
@@ -1875,6 +2326,8 @@ function renderMenu(c){
 
   // Settings
   html += '<div class="card"><div class="card-title">⚙️ Einstellungen</div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Dark / Light Modus</div><div class="setting-desc">Helles oder dunkles Design</div></div>';
+  html += '<div class="toggle' + (S.lightTheme ? ' on' : '') + '" id="togTheme"></div></div>';
   html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Wasserziel (Gläser/Tag)</div></div>';
   html += '<input type="number" class="num-input" id="waterGoalIn" value="' + S.waterGoal + '" min="1" max="30"></div>';
   html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Tägliche Mahlzeitkosten (€)</div><div class="setting-desc">Für Ersparnis-Berechnung</div></div>';
@@ -1917,6 +2370,12 @@ function renderMenu(c){
   });
   c.querySelector('#togSound').addEventListener('click', function(){
     S.soundOn = !S.soundOn; save(); renderTab();
+  });
+
+  c.querySelector('#togTheme').addEventListener('click', function(){
+    S.lightTheme = !S.lightTheme; save();
+    applyTheme();
+    renderTab();
   });
 
   c.querySelector('#notifMin').addEventListener('change', function(){
@@ -2057,9 +2516,19 @@ function registerSW(){
   }
 }
 
+/* ===== THEME ===== */
+function applyTheme(){
+  if (S.lightTheme) {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+}
+
 /* ===== INIT ===== */
 function init(){
   loadState();
+  applyTheme();
   registerSW();
 
   // Tab bar listeners
