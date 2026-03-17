@@ -21,10 +21,14 @@
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+html,body{height:100%;overflow:hidden;color:var(--text);
   font-family:'DM Sans',system-ui,-apple-system,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
-body{display:flex;flex-direction:column;padding-top:var(--safe-top)}
+body{display:flex;flex-direction:column;padding-top:var(--safe-top);
+  background:linear-gradient(135deg,#070709 0%,#0a0a12 25%,#070709 50%,#0d0d18 75%,#070709 100%);
+  background-size:400% 400%;animation:bgShift 20s ease infinite}
+@keyframes bgShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+body.light-theme,.light-theme body{background:linear-gradient(135deg,#f5f5f7 0%,#e8eaf0 25%,#f5f5f7 50%,#eef0f5 75%,#f5f5f7 100%);background-size:400% 400%;animation:bgShift 20s ease infinite}
 .mono{font-family:'DM Mono',monospace}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
 input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface2);
@@ -50,7 +54,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .tab-btn.active{color:var(--accent)}
 .tab-btn .ico{font-size:20px;line-height:1}
 
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.card{background:rgba(17,17,20,0.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(110,231,183,0.08);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color .3s ease,box-shadow .3s ease}
+.card:active{border-color:rgba(110,231,183,0.15);box-shadow:0 4px 24px rgba(0,0,0,0.2),0 0 12px rgba(110,231,183,0.05)}
 .card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;
@@ -229,7 +234,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .ring-wrap{position:relative;width:200px;height:200px;margin:0 auto 8px}
 .ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring-bg{fill:none;stroke:var(--surface3);stroke-width:7}
-.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1s ease,stroke .5s ease}
+.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1s ease,stroke .5s ease;filter:drop-shadow(0 0 8px var(--accent))}
+@keyframes ringGlow{0%,100%{filter:drop-shadow(0 0 6px var(--accent))}50%{filter:drop-shadow(0 0 16px var(--accent))}}
+.timer-active .ring-fill{animation:ringGlow 3s ease-in-out infinite}
 .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 
 /* Toast */
@@ -379,6 +386,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   --border:#d1d1d6;--text:#1c1c1e;--text2:#636366;--text3:#aeaeb2;
   --accent:#059669;--accent2:#10b981;--warn:#d97706;--danger:#dc2626;
 }
+.light-theme .card{background:rgba(255,255,255,0.72);border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 24px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.8)}
 .light-theme .tab-bar{background:rgba(255,255,255,.96)}
 .light-theme #toast{box-shadow:0 8px 32px rgba(0,0,0,.15)}
 
@@ -440,6 +448,51 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 /* Konami flash */
 @keyframes konamiFlash{0%{box-shadow:0 0 0 0 rgba(110,231,183,.6)}50%{box-shadow:0 0 40px 10px rgba(110,231,183,.3)}100%{box-shadow:0 0 0 0 transparent}}
 .konami-flash{animation:konamiFlash .6s ease}
+
+/* === VISUAL POLISH v7.5 === */
+
+/* Smooth tab slide-up */
+.tab-content{transition:opacity .2s ease;scroll-snap-type:y proximity}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.slide-up{animation:slideUp .3s ease-out}
+.card{scroll-snap-align:start;scroll-margin-top:8px}
+
+/* Tab bar indicator */
+.tab-bar{position:relative}
+.tab-indicator{position:absolute;top:0;height:2px;background:var(--accent);border-radius:0 0 2px 2px;transition:left .3s cubic-bezier(.4,0,.2,1),width .3s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--accent);pointer-events:none}
+
+/* Button ripple */
+.btn{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:rippleAnim .6s ease-out;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
+/* Number counter bounce */
+@keyframes numBounce{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.num-bounce{animation:numBounce .3s ease}
+
+/* Achievement unlock animation */
+@keyframes achieveUnlock{0%{transform:scale(1);box-shadow:none}30%{transform:scale(1.15);box-shadow:0 0 20px var(--accent)}60%{transform:scale(0.95)}100%{transform:scale(1);box-shadow:0 0 6px rgba(110,231,183,0.2)}}
+.badge-item.just-unlocked{animation:achieveUnlock .6s ease}
+.badge-item.unlocked{box-shadow:0 0 6px rgba(110,231,183,0.1)}
+
+/* Progress bar shimmer */
+.progress-fill{position:relative;overflow:hidden}
+.progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.12) 50%,transparent 100%);background-size:200% 100%;animation:shimmer 2.5s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+/* Motivation popup particles */
+.motiv-particle{position:absolute;border-radius:50%;background:rgba(110,231,183,0.15);pointer-events:none;animation:particleFloat linear forwards}
+@keyframes particleFloat{0%{transform:translateY(0) scale(1);opacity:.6}100%{transform:translateY(-200px) scale(0.3);opacity:0}}
+
+/* Water drop emoji rain */
+.water-rain-drop{position:fixed;font-size:24px;pointer-events:none;z-index:260;animation:waterRainFall linear forwards}
+@keyframes waterRainFall{0%{transform:translateY(-40px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(360deg);opacity:0}}
+
+/* Accent color picker */
+.accent-grid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding:8px 0}
+.accent-dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent}
+.accent-dot:active{transform:scale(1.15)}
+.accent-dot.sel{border-color:var(--text);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 </style>
 </head>
 <body>
@@ -506,6 +559,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 <!-- Tab Bar -->
 <div class="tab-bar">
+  <div class="tab-indicator" id="tabIndicator"></div>
   <button class="tab-btn active" data-tab="timer"><span class="ico">⏱</span>Timer</button>
   <button class="tab-btn" data-tab="track"><span class="ico">💧</span>Track</button>
   <button class="tab-btn" data-tab="stats"><span class="ico">🏆</span>Stats</button>
@@ -516,7 +570,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 <script>
 /* ================================================================
-   FASTEN TRACKER v7.0 — Complete Single-File PWA
+   FASTEN TRACKER v7.5 — Complete Single-File PWA
    ================================================================ */
 
 /* ===== CONSTANTS ===== */
@@ -732,7 +786,8 @@ function defaultState(){
     tab:'timer', mseed:0,
     history:[], achievements:{},
     sleep:{}, lightTheme:false,
-    urine:{}, vibratePattern:'normal'
+    urine:{}, vibratePattern:'normal',
+    accentColor:'#6ee7b7'
   };
 }
 
@@ -1197,6 +1252,16 @@ function checkAchievements(){
     showToast('🏆 ' + newUnlocks[0].emoji + ' ' + newUnlocks[0].name + ' freigeschaltet!');
     fireKonfetti();
     playChime();
+    // Animate badge in grid if visible
+    newUnlocks.forEach(function(a){
+      var badges = document.querySelectorAll('.badge-item');
+      badges.forEach(function(b){
+        if (b.querySelector('.b-name') && b.querySelector('.b-name').textContent === a.name) {
+          b.classList.add('just-unlocked');
+          setTimeout(function(){ b.classList.remove('just-unlocked'); }, 700);
+        }
+      });
+    });
   }
 }
 
@@ -1283,10 +1348,12 @@ function showMotivPopup(info){
 
   var emojis = ['💧','🔥','⚡','✨','🌟','💪','🧬','🏆'];
   $('mEmoji').textContent = emojis[Math.floor(Math.random() * emojis.length)];
-  $('mQuote').textContent = '\u201E' + quote + '\u201C';
+  $('mQuote').textContent = '';
   $('mNext').textContent = 'Nächste Erinnerung in ' + S.notifyMin + ' Min.';
 
   popup.classList.add('show');
+  typewriterEffect($('mQuote'), '\u201E' + quote + '\u201C', 25);
+  spawnMotivParticles();
   playChime();
   try { navigator.vibrate(getVibrationPattern()); } catch(e) {}
 }
@@ -1413,6 +1480,14 @@ function renderTab(){
     case 'info': renderInfo(c); break;
     case 'menu': renderMenu(c); break;
   }
+
+  // Slide-up animation for tab content
+  if (c.firstElementChild) {
+    c.firstElementChild.classList.add('slide-up');
+  }
+
+  // Update tab indicator position
+  updateTabIndicator();
 }
 
 /* ===== AUTOPHAGY LEVEL ===== */
@@ -1763,13 +1838,18 @@ function renderTimer(c){
   var qwMinus = c.querySelector('#qwMinus');
   if (qwPlus) qwPlus.addEventListener('click', function(){
     var key = todayStr();
-    S.water[key] = (S.water[key] || 0) + 1;
+    var prevWater = S.water[key] || 0;
+    S.water[key] = prevWater + 1;
     save();
     var cnt = c.querySelector('#qwCount');
     if (cnt) { cnt.innerHTML = S.water[key] + ' <span>/ ' + S.waterGoal + '</span>'; }
     var wrap = c.querySelector('#qwWrap');
     if (wrap) { wrap.classList.add('water-splash'); setTimeout(function(){ wrap.classList.remove('water-splash'); }, 300); }
     showWaterDrop(qwPlus);
+    if (prevWater < S.waterGoal && S.water[key] >= S.waterGoal) {
+      waterGoalCelebration();
+      showToast('\uD83C\uDF89 Wasserziel erreicht!');
+    }
     checkAchievements();
   });
   if (qwMinus) qwMinus.addEventListener('click', function(){
@@ -1784,7 +1864,7 @@ function renderTimer(c){
   if (rBtn) {
     rBtn.addEventListener('click', function(){
       var em = c.querySelector('#qMotiv em');
-      if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
+      if (em) typewriterEffect(em, '\u201E' + getSeededQuote() + '\u201C', 25);
     });
   }
   var bBtn = c.querySelector('#breathBtn');
@@ -1954,7 +2034,13 @@ function renderTrack(c){
   var wPlusBtn = c.querySelector('#wPlus');
   wPlusBtn.addEventListener('click', function(){
     showWaterDrop(wPlusBtn);
-    S.water[d] = (S.water[d] || 0) + 1; save(); checkAchievements(); renderTab();
+    var prevW = S.water[d] || 0;
+    S.water[d] = prevW + 1; save();
+    if (prevW < S.waterGoal && S.water[d] >= S.waterGoal) {
+      waterGoalCelebration();
+      showToast('\uD83C\uDF89 Wasserziel erreicht!');
+    }
+    checkAchievements(); renderTab();
   });
   c.querySelector('#wMinus').addEventListener('click', function(){
     S.water[d] = Math.max(0, (S.water[d] || 0) - 1); save(); renderTab();
@@ -2713,6 +2799,15 @@ function renderMenu(c){
   html += '<input type="number" class="num-input" id="caloriesIn" value="' + S.dailyCalories + '" min="500" max="5000" step="100"></div>';
   html += '</div>';
 
+  // Accent Color Picker
+  html += '<div class="card"><div class="card-title">\uD83C\uDFA8 Akzentfarbe</div>';
+  html += '<div class="accent-grid">';
+  ACCENT_COLORS.forEach(function(ac){
+    var isSel = (S.accentColor || '#6ee7b7') === ac.color;
+    html += '<div class="accent-dot' + (isSel ? ' sel' : '') + '" data-accent="' + ac.color + '" style="background:' + ac.color + '">' + (isSel ? '\u2713' : '') + '</div>';
+  });
+  html += '</div></div>';
+
   // Actions
   html += '<div class="card"><div class="card-title">⚡ Aktionen</div>';
   if (S.configured) {
@@ -2731,7 +2826,7 @@ function renderMenu(c){
   html += '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + HUNGER_TIPS[Math.floor(Math.random() * HUNGER_TIPS.length)] + '</div></div>';
 
   // Version
-  html += '<div class="version-info" id="versionInfo">Fasten Tracker v7.0<br>Made with \uD83D\uDC9A fuer bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome \u00B7 Schuettle fuer Motivation!</span></div>';
+  html += '<div class="version-info" id="versionInfo">Fasten Tracker v7.5<br>Made with \uD83D\uDC9A fuer bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome \u00B7 Schuettle fuer Motivation!</span></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -2788,6 +2883,16 @@ function renderMenu(c){
       S.vibratePattern = btn.dataset.vib; save();
       c.querySelectorAll('.vib-btn').forEach(function(x){ x.classList.toggle('sel', x.dataset.vib === S.vibratePattern); });
       try { navigator.vibrate(getVibrationPattern()); } catch(e){}
+    });
+  });
+
+  // Accent color picker
+  c.querySelectorAll('.accent-dot').forEach(function(dot){
+    dot.addEventListener('click', function(){
+      S.accentColor = dot.dataset.accent;
+      save();
+      applyAccentColor();
+      renderTab();
     });
   });
 
@@ -2885,6 +2990,9 @@ function startTicker(){
     }
     if (tEl) tEl.textContent = '\u23F1 ' + fmtDurLong(info.elapsed);
 
+    // Number bounce on minute change
+    checkNumBounce();
+
     // Update interval countdown
     var intCountdown = document.getElementById('intervalCountdown');
     if (intCountdown && info.type === 'interval') {
@@ -2918,13 +3026,137 @@ function applyTheme(){
   } else {
     document.body.classList.remove('light-theme');
   }
+  applyAccentColor();
+}
+
+/* ===== TAB INDICATOR ===== */
+function updateTabIndicator(){
+  var indicator = $('tabIndicator');
+  if (!indicator) return;
+  var activeBtn = document.querySelector('.tab-btn.active');
+  if (!activeBtn) return;
+  var bar = activeBtn.parentElement;
+  var barRect = bar.getBoundingClientRect();
+  var btnRect = activeBtn.getBoundingClientRect();
+  indicator.style.left = (btnRect.left - barRect.left) + 'px';
+  indicator.style.width = btnRect.width + 'px';
+}
+
+/* ===== BUTTON RIPPLE EFFECT ===== */
+function initRipple(){
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.btn');
+    if (!btn) return;
+    var rect = btn.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 2;
+    var ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = size + 'px';
+    ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    btn.appendChild(ripple);
+    setTimeout(function(){ if (ripple.parentNode) ripple.parentNode.removeChild(ripple); }, 650);
+  });
+}
+
+/* ===== NUMBER BOUNCE (timer minutes) ===== */
+var lastBounceMinute = -1;
+function checkNumBounce(){
+  var tb = document.getElementById('tBig');
+  if (!tb) return;
+  var txt = tb.textContent; // e.g. "01:23:45"
+  var parts = txt.split(':');
+  var curMin = parseInt(parts[1] || '0');
+  if (lastBounceMinute !== curMin) {
+    lastBounceMinute = curMin;
+    tb.classList.remove('num-bounce');
+    void tb.offsetWidth; // force reflow
+    tb.classList.add('num-bounce');
+  }
+}
+
+/* ===== MOTIVATION POPUP PARTICLES ===== */
+function spawnMotivParticles(){
+  var content = document.querySelector('.motiv-content');
+  if (!content) return;
+  for (var i = 0; i < 18; i++) {
+    var p = document.createElement('div');
+    p.className = 'motiv-particle';
+    var size = 4 + Math.random() * 8;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.bottom = (-10 - Math.random() * 30) + 'px';
+    p.style.animationDuration = (2 + Math.random() * 3) + 's';
+    p.style.animationDelay = (Math.random() * 1.5) + 's';
+    content.appendChild(p);
+    (function(el){
+      setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 5500);
+    })(p);
+  }
+}
+
+/* ===== WATER GOAL CELEBRATION (emoji rain) ===== */
+function waterGoalCelebration(){
+  for (var i = 0; i < 12; i++) {
+    var drop = document.createElement('div');
+    drop.className = 'water-rain-drop';
+    drop.textContent = '\uD83D\uDCA7';
+    drop.style.left = (5 + Math.random() * 90) + '%';
+    drop.style.top = '-40px';
+    drop.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+    drop.style.animationDelay = (Math.random() * 0.6) + 's';
+    drop.style.fontSize = (18 + Math.random() * 14) + 'px';
+    document.body.appendChild(drop);
+    (function(el){
+      setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+    })(drop);
+  }
+}
+
+/* ===== TYPEWRITER EFFECT ===== */
+function typewriterEffect(element, text, speed){
+  if (!element) return;
+  speed = speed || 25;
+  element.textContent = '';
+  var idx = 0;
+  function type(){
+    if (idx < text.length) {
+      element.textContent += text.charAt(idx);
+      idx++;
+      setTimeout(type, speed);
+    }
+  }
+  type();
+}
+
+/* ===== ACCENT COLOR PICKER ===== */
+var ACCENT_COLORS = [
+  {name:'Mint', color:'#6ee7b7', dark:'#34d399'},
+  {name:'Blau', color:'#60a5fa', dark:'#3b82f6'},
+  {name:'Lila', color:'#a78bfa', dark:'#8b5cf6'},
+  {name:'Pink', color:'#f472b6', dark:'#ec4899'},
+  {name:'Orange', color:'#fb923c', dark:'#f97316'},
+  {name:'Gold', color:'#fbbf24', dark:'#f59e0b'}
+];
+
+function applyAccentColor(){
+  var color = S.accentColor || '#6ee7b7';
+  var match = ACCENT_COLORS.find(function(a){ return a.color === color; });
+  var dark = match ? match.dark : '#34d399';
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent2', dark);
 }
 
 /* ===== INIT ===== */
 function init(){
   loadState();
   applyTheme();
+  applyAccentColor();
+  initRipple();
   registerSW();
+  window.addEventListener('resize', updateTabIndicator);
 
   // Tab bar listeners
   document.querySelectorAll('.tab-btn').forEach(function(btn){
@@ -3005,7 +3237,7 @@ function init(){
     if (e.code === 'Space' && S.tab === 'timer') {
       e.preventDefault();
       var em = document.querySelector('#qMotiv em');
-      if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
+      if (em) typewriterEffect(em, '\u201E' + getSeededQuote() + '\u201C', 25);
     }
     // Konami code detection (keyboard)
     if (e.key === konamiSeq[konamiPos]) {
