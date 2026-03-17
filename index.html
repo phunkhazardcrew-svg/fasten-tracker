@@ -224,6 +224,62 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .fade-in{animation:fadeIn .25s ease}
+
+/* Progress Ring */
+.ring-wrap{position:relative;width:200px;height:200px;margin:0 auto 8px}
+.ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surface3);stroke-width:7}
+.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1s ease,stroke .5s ease}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* Toast */
+#toast{position:fixed;top:calc(16px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-100px);
+  z-index:300;background:var(--surface);border:1px solid var(--accent);border-radius:50px;
+  padding:12px 24px;font-size:14px;font-weight:600;color:var(--accent);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Konfetti Canvas */
+#konfetti{position:fixed;inset:0;z-index:250;pointer-events:none}
+
+/* Quick Water + Day Summary */
+.quick-water{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 0}
+.qw-count{font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);min-width:80px;text-align:center}
+.qw-count span{font-size:16px;color:var(--text3);font-weight:400}
+.qw-btn{width:44px;height:44px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);
+  font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.qw-btn:active{background:var(--accent);color:#070709;border-color:var(--accent);transform:scale(1.15)}
+.day-summary{display:flex;justify-content:space-around;padding:10px 0 2px;border-top:1px solid var(--border);margin-top:10px}
+.ds-item{text-align:center;font-size:11px;color:var(--text3)}
+.ds-val{font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px}
+
+/* Next Milestone */
+.milestone{background:linear-gradient(135deg,rgba(110,231,183,.06),rgba(96,165,250,.04));
+  border:1px solid rgba(110,231,183,.15);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px}
+.ms-ico{font-size:28px;flex-shrink:0}
+.ms-name{font-size:13px;font-weight:600}
+.ms-desc{font-size:11px;color:var(--text2);margin-top:1px}
+.ms-eta{font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:3px}
+
+/* Stagger animation */
+.stagger>.card,.stagger>.milestone{animation:fadeIn .3s ease both}
+.stagger>:nth-child(1){animation-delay:0s}
+.stagger>:nth-child(2){animation-delay:.04s}
+.stagger>:nth-child(3){animation-delay:.08s}
+.stagger>:nth-child(4){animation-delay:.12s}
+.stagger>:nth-child(5){animation-delay:.16s}
+.stagger>:nth-child(6){animation-delay:.2s}
+.stagger>:nth-child(7){animation-delay:.24s}
+
+/* Timer pulse */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.timer-active .timer-big{animation:pulse 3s ease-in-out infinite}
+
+/* Water splash */
+@keyframes splash{0%{transform:scale(1)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
+.water-splash .qw-count{animation:splash .25s ease}
 </style>
 </head>
 <body>
@@ -268,6 +324,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
     <div class="motiv-next" id="mNext"></div>
   </div>
 </div>
+
+<!-- Toast -->
+<div id="toast"></div>
+<!-- Konfetti -->
+<canvas id="konfetti"></canvas>
 
 <!-- Tab Content -->
 <div class="tab-content" id="tabContent"></div>
@@ -519,6 +580,62 @@ function playChime(){
   } catch(e) {}
 }
 
+/* ===== TOAST ===== */
+var toastTimer = null;
+function showToast(msg){
+  var el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3500);
+}
+
+/* ===== KONFETTI ===== */
+function fireKonfetti(){
+  var canvas = $('konfetti');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  var colors = ['#6ee7b7','#fbbf24','#f87171','#60a5fa','#a78bfa','#f472b6','#34d399'];
+  var particles = [];
+  for (var i = 0; i < 100; i++) {
+    particles.push({
+      x: canvas.width / 2 + (Math.random() - .5) * 80,
+      y: canvas.height * 0.4,
+      vx: (Math.random() - .5) * 14,
+      vy: Math.random() * -16 - 5,
+      w: Math.random() * 8 + 3,
+      h: Math.random() * 5 + 2,
+      c: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * 360,
+      rv: (Math.random() - .5) * 14,
+      life: 1
+    });
+  }
+  function draw(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var alive = false;
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      if (p.life <= 0) continue;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.35;
+      p.rot += p.rv; p.life -= 0.013;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (alive) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
 /* ===== HELPERS ===== */
 function getTimeOfDay(){
   var h = new Date().getHours();
@@ -678,14 +795,19 @@ function checkAchievements(){
   (S.history || []).forEach(function(h){ if (h.duration > maxHist) maxHist = h.duration; });
   var checkMs = Math.max(elapsed, maxHist);
 
-  var changed = false;
+  var newUnlocks = [];
   ACHIEVEMENTS.forEach(function(a){
     if (!S.achievements[a.id] && a.check(S, checkMs)) {
       S.achievements[a.id] = {date: todayStr()};
-      changed = true;
+      newUnlocks.push(a);
     }
   });
-  if (changed) save();
+  if (newUnlocks.length > 0) {
+    save();
+    showToast('🏆 ' + newUnlocks[0].emoji + ' ' + newUnlocks[0].name + ' freigeschaltet!');
+    fireKonfetti();
+    playChime();
+  }
 }
 
 /* ===== STREAK CALCULATION ===== */
@@ -931,27 +1053,37 @@ function renderTimer(c){
       '<p style="color:var(--text2);margin-bottom:6px">' + fmtDurLong(info.totalMs) + ' geschafft!</p>' +
       '<p style="color:var(--text2);margin-bottom:20px;font-size:13px">Denke an ein sanftes Refeed — siehe Info-Tab.</p>' +
       '<button class="btn btn-accent" id="tEndBtn">✅ Fasten beenden & speichern</button></div>';
-    c.querySelector('#tEndBtn').addEventListener('click', endFast);
+    c.querySelector('#tEndBtn').addEventListener('click', function(){
+      fireKonfetti();
+      endFast();
+    });
     return;
   }
 
   var pct = Math.round(info.progress * 100);
-  var html = '<div class="fade-in">';
+  var phaseColor = getPhaseColor(info);
+  var ringR = 82, ringC = 2 * Math.PI * ringR, ringOff = ringC * (1 - info.progress);
+  var html = '<div class="stagger timer-active">';
 
-  // Main timer card
-  html += '<div class="card"><div class="timer-display">';
+  // Ring timer card
+  html += '<div class="card"><div class="ring-wrap">';
+  html += '<svg class="ring-svg" viewBox="0 0 200 200">';
+  html += '<circle class="ring-bg" cx="100" cy="100" r="' + ringR + '"/>';
+  html += '<circle class="ring-fill" id="tRing" cx="100" cy="100" r="' + ringR + '" stroke="' + phaseColor + '" stroke-dasharray="' + ringC.toFixed(1) + '" stroke-dashoffset="' + ringOff.toFixed(1) + '"/>';
+  html += '</svg>';
+  html += '<div class="ring-center">';
   html += '<div class="timer-big mono" id="tBig">' + fmtDur(info.remaining) + '</div>';
-  html += '<div class="timer-elapsed" id="tElapsed">⏱ ' + fmtDurLong(info.elapsed) + ' vergangen</div>';
+  html += '<div class="timer-elapsed" id="tElapsed">⏱ ' + fmtDurLong(info.elapsed) + '</div>';
+  html += '</div></div>';
 
   if (info.type === 'interval') {
-    html += '<div style="text-align:center;margin-top:10px"><span class="interval-badge ' +
+    html += '<div style="text-align:center;margin-top:4px"><span class="interval-badge ' +
       (info.inEating ? 'badge-eating' : 'badge-fasting') + '">' +
       (info.inEating ? '🍽 Essens-Fenster' : '🔥 Fasten-Fenster') + '</span></div>';
   }
-  html += '</div>';
 
-  // Progress
-  html += '<div class="progress-bar"><div class="progress-fill" id="tProgress" style="width:' + pct + '%;background-color:' + getPhaseColor(info) + '"></div></div>';
+  // Mini progress bar + info
+  html += '<div class="progress-bar" style="margin-top:12px"><div class="progress-fill" id="tProgress" style="width:' + pct + '%;background-color:' + phaseColor + '"></div></div>';
   html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:2px">';
   html += '<span id="tPct">' + pct + '%</span>';
   if (info.type === 'continuous') {
@@ -961,12 +1093,46 @@ function renderTimer(c){
   }
   html += '</div></div>';
 
+  // Next milestone (body timeline)
+  if (info.type === 'continuous' && info.elapsedH !== undefined) {
+    var nextMs = null;
+    for (var mi = 0; mi < BODY_TIMELINE.length; mi++) {
+      if (BODY_TIMELINE[mi].h > info.elapsedH) { nextMs = BODY_TIMELINE[mi]; break; }
+    }
+    if (nextMs) {
+      var etaH = nextMs.h - info.elapsedH;
+      html += '<div class="milestone"><div class="ms-ico">🎯</div><div>';
+      html += '<div class="ms-name">Nächster Meilenstein: ' + nextMs.title + '</div>';
+      html += '<div class="ms-desc">' + nextMs.desc + '</div>';
+      html += '<div class="ms-eta">in ~' + Math.ceil(etaH) + 'h</div>';
+      html += '</div></div>';
+    }
+  }
+
   // Phase card
   html += '<div class="card" style="border-left:3px solid ' + info.phase.color + '">';
   html += '<div class="timer-phase"><div class="phase-dot" style="background:' + info.phase.color + '"></div>';
   html += '<span class="phase-name">' + info.phase.emoji + ' ' + info.phase.name + '</span></div>';
   html += '<div class="phase-desc">' + info.phase.desc + '</div>';
   html += '<div class="phase-tip">' + info.phase.tip + '</div></div>';
+
+  // Quick Water + Daily Summary
+  var td = todayStr();
+  var todayWater = S.water[td] || 0;
+  var todayMood = S.moods[td] || '';
+  var todayElec = S.elektrolyteChecks[td] || {};
+  var elecDone = Object.values(todayElec).filter(function(v){ return v; }).length;
+  html += '<div class="card"><div class="card-title">💧 Schnell-Tracker</div>';
+  html += '<div class="quick-water" id="qwWrap">';
+  html += '<button class="qw-btn" id="qwMinus">−</button>';
+  html += '<div class="qw-count" id="qwCount">' + todayWater + ' <span>/ ' + S.waterGoal + '</span></div>';
+  html += '<button class="qw-btn" id="qwPlus">+</button>';
+  html += '</div>';
+  html += '<div class="day-summary">';
+  html += '<div class="ds-item"><div class="ds-val">' + (todayMood ? todayMood.split(' ')[0] : '—') + '</div>Stimmung</div>';
+  html += '<div class="ds-item"><div class="ds-val">' + elecDone + '/3</div>Elektrolyte</div>';
+  html += '<div class="ds-item"><div class="ds-val">' + (S.journal[td] ? '✅' : '—') + '</div>Journal</div>';
+  html += '</div></div>';
 
   // Day dots (continuous, <=30 days)
   if (info.type === 'continuous' && info.totalDays <= 30) {
@@ -985,6 +1151,27 @@ function renderTimer(c){
 
   html += '</div>';
   c.innerHTML = html;
+
+  // Event listeners
+  var qwPlus = c.querySelector('#qwPlus');
+  var qwMinus = c.querySelector('#qwMinus');
+  if (qwPlus) qwPlus.addEventListener('click', function(){
+    var key = todayStr();
+    S.water[key] = (S.water[key] || 0) + 1;
+    save();
+    var cnt = c.querySelector('#qwCount');
+    if (cnt) { cnt.innerHTML = S.water[key] + ' <span>/ ' + S.waterGoal + '</span>'; }
+    var wrap = c.querySelector('#qwWrap');
+    if (wrap) { wrap.classList.add('water-splash'); setTimeout(function(){ wrap.classList.remove('water-splash'); }, 300); }
+    checkAchievements();
+  });
+  if (qwMinus) qwMinus.addEventListener('click', function(){
+    var key = todayStr();
+    S.water[key] = Math.max(0, (S.water[key] || 0) - 1);
+    save();
+    var cnt = c.querySelector('#qwCount');
+    if (cnt) { cnt.innerHTML = S.water[key] + ' <span>/ ' + S.waterGoal + '</span>'; }
+  });
 
   var rBtn = c.querySelector('#refreshQ');
   if (rBtn) {
@@ -1392,7 +1579,7 @@ function renderMenu(c){
   html += '</div>';
 
   // Version
-  html += '<div class="version-info">Fasten Tracker v4.1<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
+  html += '<div class="version-info">Fasten Tracker v4.2<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -1484,6 +1671,9 @@ function startTicker(){
 
     // Check for completion transition
     if (info.completed && info.type === 'continuous') {
+      fireKonfetti();
+      showToast('🎉 Fasten abgeschlossen! Glückwunsch!');
+      playChime();
       renderTab();
       return;
     }
@@ -1492,15 +1682,22 @@ function startTicker(){
     var tp = document.getElementById('tProgress');
     var tPct = document.getElementById('tPct');
     var tEl = document.getElementById('tElapsed');
+    var tRing = document.getElementById('tRing');
 
     if (tb) tb.textContent = fmtDur(info.remaining);
     if (tp) {
       var pct = Math.round(info.progress * 100);
+      var col = getPhaseColor(info);
       tp.style.width = pct + '%';
-      tp.style.backgroundColor = getPhaseColor(info);
+      tp.style.backgroundColor = col;
       if (tPct) tPct.textContent = pct + '%';
     }
-    if (tEl) tEl.textContent = '⏱ ' + fmtDurLong(info.elapsed) + ' vergangen';
+    if (tRing) {
+      var ringR = 82, ringC = 2 * Math.PI * ringR;
+      tRing.setAttribute('stroke-dashoffset', (ringC * (1 - info.progress)).toFixed(1));
+      tRing.setAttribute('stroke', getPhaseColor(info));
+    }
+    if (tEl) tEl.textContent = '⏱ ' + fmtDurLong(info.elapsed);
 
     checkAchievements();
   }, 1000);
@@ -1564,6 +1761,31 @@ function init(){
   renderTab();
   startTicker();
   startMotivInterval();
+
+  // Shake to motivate (mobile)
+  var lastShake = 0;
+  window.addEventListener('devicemotion', function(e){
+    var acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    var force = Math.abs(acc.x || 0) + Math.abs(acc.y || 0) + Math.abs(acc.z || 0);
+    if (force > 40 && Date.now() - lastShake > 2500) {
+      lastShake = Date.now();
+      var info = getFastInfo();
+      if (info.active && info.started && !info.completed) {
+        showToast('💪 ' + getRandomQuote());
+        try { navigator.vibrate(100); } catch(e2){}
+      }
+    }
+  });
+
+  // Keyboard shortcut: Space for new quote on timer
+  document.addEventListener('keydown', function(e){
+    if (e.code === 'Space' && S.tab === 'timer') {
+      e.preventDefault();
+      var em = document.querySelector('#qMotiv em');
+      if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
+    }
+  });
 }
 
 // Ensure audio context can be created on user interaction
