@@ -389,6 +389,57 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .report-card{background:var(--surface2);border-radius:var(--radius-sm);padding:16px;margin-top:12px;
   font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-line}
 .report-card strong{color:var(--text);font-weight:600}
+
+/* Water Float Animation */
+@keyframes waterFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(1.2)}}
+.water-float{position:absolute;pointer-events:none;font-size:16px;font-weight:700;color:var(--accent);
+  animation:waterFloat .8s ease-out forwards;z-index:99}
+
+/* Urine Color Check */
+.urine-grid{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.urine-swatch{width:44px;height:44px;border-radius:50%;cursor:pointer;border:3px solid transparent;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:10px}
+.urine-swatch:active{transform:scale(1.15)}
+.urine-swatch.sel{border-color:var(--accent);box-shadow:0 0 12px rgba(110,231,183,.3)}
+.urine-msg{text-align:center;font-size:13px;margin-top:8px;min-height:24px;color:var(--text2)}
+
+/* Weight Forecast Canvas */
+#weightForecast{width:100%;height:220px;display:block;border-radius:var(--radius-sm);background:var(--surface2);margin-top:10px}
+
+/* Achievement Progress Bar */
+.ach-progress{height:3px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
+.ach-progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .5s ease}
+
+/* Daily Checklist */
+.checklist{list-style:none;padding:0;margin:0}
+.checklist li{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px;color:var(--text2)}
+.checklist li .chk-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.checklist li.done{color:var(--accent)}
+.checklist li.done .chk-icon{color:var(--accent)}
+
+/* Vibration Pattern Buttons */
+.vib-grid{display:flex;gap:8px}
+.vib-btn{flex:1;padding:10px 8px;background:var(--surface2);border:2px solid transparent;border-radius:var(--radius-sm);
+  text-align:center;font-size:12px;cursor:pointer;transition:all .15s}
+.vib-btn.sel{border-color:var(--accent);background:rgba(110,231,183,.08)}
+
+/* Interval Countdown Badge */
+.interval-countdown{text-align:center;padding:8px 16px;margin:8px auto 0;border-radius:20px;
+  font-size:14px;font-weight:600;font-family:'DM Mono',monospace;display:inline-block}
+.interval-countdown.fasting{background:rgba(110,231,183,.12);color:var(--accent)}
+.interval-countdown.eating{background:rgba(251,191,36,.12);color:var(--warn)}
+
+/* Fasting Plan Cards */
+.plan-card{background:var(--surface2);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;
+  border-left:3px solid var(--accent)}
+.plan-card h4{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--accent)}
+.plan-card .plan-step{font-size:12px;color:var(--text2);line-height:1.6;padding:3px 0}
+.plan-card .plan-warn{font-size:11px;color:var(--warn);margin-top:6px}
+.plan-card .plan-tip{font-size:11px;color:var(--text3);margin-top:4px;font-style:italic}
+
+/* Konami flash */
+@keyframes konamiFlash{0%{box-shadow:0 0 0 0 rgba(110,231,183,.6)}50%{box-shadow:0 0 40px 10px rgba(110,231,183,.3)}100%{box-shadow:0 0 0 0 transparent}}
+.konami-flash{animation:konamiFlash .6s ease}
 </style>
 </head>
 <body>
@@ -465,7 +516,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 <script>
 /* ================================================================
-   FASTEN TRACKER v4.0 — Complete Single-File PWA
+   FASTEN TRACKER v7.0 — Complete Single-File PWA
    ================================================================ */
 
 /* ===== CONSTANTS ===== */
@@ -680,7 +731,8 @@ function defaultState(){
     dailyMealCost:15, dailyCalories:2000,
     tab:'timer', mseed:0,
     history:[], achievements:{},
-    sleep:{}, lightTheme:false
+    sleep:{}, lightTheme:false,
+    urine:{}, vibratePattern:'normal'
   };
 }
 
@@ -885,7 +937,7 @@ function startBreathing(){
           circle.textContent = '✅';
           text.textContent = 'Geschafft! Hunger verblasst.';
           countEl.textContent = '';
-          try { navigator.vibrate(200); } catch(e2){}
+          try { navigator.vibrate(getVibrationPattern()); } catch(e2){}
           return;
         }
       }
@@ -1236,7 +1288,7 @@ function showMotivPopup(info){
 
   popup.classList.add('show');
   playChime();
-  try { navigator.vibrate([200, 100, 200]); } catch(e) {}
+  try { navigator.vibrate(getVibrationPattern()); } catch(e) {}
 }
 
 function requestNotifPermission(){
@@ -1582,6 +1634,12 @@ function renderTimer(c){
     html += '<div style="text-align:center;margin-top:4px"><span class="interval-badge ' +
       (info.inEating ? 'badge-eating' : 'badge-fasting') + '">' +
       (info.inEating ? '🍽 Essens-Fenster' : '🔥 Fasten-Fenster') + '</span></div>';
+    // Countdown bis naechste Mahlzeit / Fasten startet
+    var countdownLabel = info.inEating
+      ? '\uD83D\uDD25 Fasten startet in ' + fmtDur(info.remaining)
+      : '\uD83C\uDF7D Naechste Mahlzeit in ' + fmtDur(info.remaining);
+    var countdownCls = info.inEating ? 'eating' : 'fasting';
+    html += '<div style="text-align:center;margin-top:8px"><span class="interval-countdown ' + countdownCls + '" id="intervalCountdown">' + countdownLabel + '</span></div>';
   }
 
   // Mini progress bar + info
@@ -1654,6 +1712,21 @@ function renderTimer(c){
   html += '<div class="ds-item"><div class="ds-val">' + (S.journal[td] ? '✅' : '—') + '</div>Journal</div>';
   html += '</div></div>';
 
+  // Daily Checklist
+  var chkWater = todayWater >= S.waterGoal;
+  var chkElec = elecDone >= 3;
+  var chkMood = !!todayMood;
+  var chkJournal = !!(S.journal[td] && S.journal[td].length > 0);
+  var chkWeight = !!S.weight[td];
+  html += '<div class="card"><div class="card-title">\u2705 Tagesziel-Checkliste</div>';
+  html += '<ul class="checklist">';
+  html += '<li class="' + (chkWater ? 'done' : '') + '"><span class="chk-icon">' + (chkWater ? '\u2705' : '\u26AA') + '</span>Wasser-Ziel erreicht (' + todayWater + '/' + S.waterGoal + ' Glaeser)</li>';
+  html += '<li class="' + (chkElec ? 'done' : '') + '"><span class="chk-icon">' + (chkElec ? '\u2705' : '\u26AA') + '</span>Elektrolyte genommen (' + elecDone + '/3)</li>';
+  html += '<li class="' + (chkMood ? 'done' : '') + '"><span class="chk-icon">' + (chkMood ? '\u2705' : '\u26AA') + '</span>Stimmung geloggt</li>';
+  html += '<li class="' + (chkJournal ? 'done' : '') + '"><span class="chk-icon">' + (chkJournal ? '\u2705' : '\u26AA') + '</span>Journal geschrieben</li>';
+  html += '<li class="' + (chkWeight ? 'done' : '') + '"><span class="chk-icon">' + (chkWeight ? '\u2705' : '\u26AA') + '</span>Gewicht eingetragen</li>';
+  html += '</ul></div>';
+
   // Day dots (continuous, <=30 days)
   if (info.type === 'continuous' && info.totalDays <= 30) {
     html += '<div class="card"><div class="card-title">Tagesfortschritt</div><div class="day-dots">';
@@ -1696,6 +1769,7 @@ function renderTimer(c){
     if (cnt) { cnt.innerHTML = S.water[key] + ' <span>/ ' + S.waterGoal + '</span>'; }
     var wrap = c.querySelector('#qwWrap');
     if (wrap) { wrap.classList.add('water-splash'); setTimeout(function(){ wrap.classList.remove('water-splash'); }, 300); }
+    showWaterDrop(qwPlus);
     checkAchievements();
   });
   if (qwMinus) qwMinus.addEventListener('click', function(){
@@ -1781,6 +1855,22 @@ function renderTrack(c){
   }
   html += '</div>';
 
+  // Urine Color Check
+  var curUrine = S.urine[d] || '';
+  var urineColors = ['#f5f0c8','#f0e68c','#daa520','#cd853f','#8b6914','#654321'];
+  var urineLabels = ['Optimal','Gut','OK','Trinken!','Dehydriert!','Gefahr!'];
+  var urineEmojis = ['\uD83D\uDC4D','\uD83D\uDE0A','\uD83D\uDE10','\uD83D\uDCA7','\u26A0\uFE0F','\uD83D\uDEA8'];
+  html += '<div class="card"><div class="card-title">\uD83D\uDEBD Urin-Farb-Check (Hydration)</div>';
+  html += '<div class="urine-grid">';
+  for (var ui = 0; ui < urineColors.length; ui++) {
+    html += '<div class="urine-swatch' + (curUrine === urineLabels[ui] ? ' sel' : '') + '" data-urine="' + urineLabels[ui] + '" data-idx="' + ui + '" style="background:' + urineColors[ui] + '"></div>';
+  }
+  html += '</div>';
+  var urineSelIdx = urineLabels.indexOf(curUrine);
+  var urineMsg = urineSelIdx >= 0 ? urineEmojis[urineSelIdx] + ' ' + urineLabels[urineSelIdx] + (urineSelIdx >= 3 ? ' — Sofort mehr trinken!' : urineSelIdx >= 2 ? ' — Etwas mehr Wasser.' : ' — Gute Hydration!') : '';
+  html += '<div class="urine-msg" id="urineMsg">' + urineMsg + '</div>';
+  html += '</div>';
+
   // Weight
   html += '<div class="card"><div class="card-title">⚖️ Gewicht</div>';
   html += '<div class="weight-row"><input type="number" id="wInput" placeholder="kg" step="0.1" value="' + curWeight + '">';
@@ -1844,7 +1934,26 @@ function renderTrack(c){
     });
   });
 
-  c.querySelector('#wPlus').addEventListener('click', function(){
+  // Urine swatches
+  c.querySelectorAll('.urine-swatch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      var label = sw.dataset.urine;
+      var idx = parseInt(sw.dataset.idx);
+      S.urine[d] = label; save();
+      c.querySelectorAll('.urine-swatch').forEach(function(x){ x.classList.toggle('sel', x.dataset.urine === label); });
+      var urEmojis = ['\uD83D\uDC4D','\uD83D\uDE0A','\uD83D\uDE10','\uD83D\uDCA7','\u26A0\uFE0F','\uD83D\uDEA8'];
+      var msg = urEmojis[idx] + ' ' + label;
+      if (idx >= 3) msg += ' — Sofort mehr trinken!';
+      else if (idx >= 2) msg += ' — Etwas mehr Wasser.';
+      else msg += ' — Gute Hydration!';
+      var msgEl = c.querySelector('#urineMsg');
+      if (msgEl) msgEl.textContent = msg;
+    });
+  });
+
+  var wPlusBtn = c.querySelector('#wPlus');
+  wPlusBtn.addEventListener('click', function(){
+    showWaterDrop(wPlusBtn);
     S.water[d] = (S.water[d] || 0) + 1; save(); checkAchievements(); renderTab();
   });
   c.querySelector('#wMinus').addEventListener('click', function(){
@@ -1918,6 +2027,198 @@ function renderTrack(c){
 
 function escHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ===== WATER DROP ANIMATION ===== */
+function showWaterDrop(element){
+  if (!element) return;
+  var drop = document.createElement('span');
+  drop.className = 'water-float';
+  drop.textContent = '+1 \uD83D\uDCA7';
+  var rect = element.getBoundingClientRect();
+  drop.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+  drop.style.top = (rect.top - 5) + 'px';
+  drop.style.position = 'fixed';
+  document.body.appendChild(drop);
+  setTimeout(function(){ if (drop.parentNode) drop.parentNode.removeChild(drop); }, 900);
+}
+
+/* ===== VIBRATION PATTERN ===== */
+function getVibrationPattern(){
+  var p = S.vibratePattern || 'normal';
+  if (p === 'sanft') return [100];
+  if (p === 'stark') return [300, 100, 300, 100, 300];
+  return [200, 100, 200];
+}
+
+/* ===== ACHIEVEMENT PROGRESS ===== */
+function getAchievementProgress(a, state, maxMs){
+  var hourMap = {h12:12, h24:24, h48:48, h72:72, d5:120, d7:168, h168:168};
+  if (hourMap[a.id]) {
+    var needed = hourMap[a.id] * 3600000;
+    return Math.min(maxMs / needed, 1);
+  }
+  if (a.id === 'hydro') {
+    var w = state.water || {};
+    var best = 0;
+    Object.values(w).forEach(function(v){ if (v > best) best = v; });
+    return Math.min(best / 10, 1);
+  }
+  if (a.id === 'comp3') {
+    var ct = (state.history || []).filter(function(h){ return h.completed; }).length;
+    return Math.min(ct / 3, 1);
+  }
+  if (a.id === 'jour5') {
+    var jc = Object.keys(state.journal || {}).filter(function(k){ return state.journal[k].length > 0; }).length;
+    return Math.min(jc / 5, 1);
+  }
+  if (a.id === 'mood7') {
+    return Math.min(Object.keys(state.moods || {}).length / 7, 1);
+  }
+  if (a.id === 'weight5') {
+    return Math.min(Object.keys(state.weight || {}).length / 5, 1);
+  }
+  if (a.id === 'streak3') {
+    return Math.min(calcStreak().best / 3, 1);
+  }
+  if (a.id === 'streak5') {
+    return Math.min(calcStreak().best / 5, 1);
+  }
+  if (a.id === 'water7') {
+    var ww = state.water || {};
+    var streak7 = 0;
+    var keys7 = Object.keys(ww).sort().slice(-7);
+    keys7.forEach(function(k){ if (ww[k] >= state.waterGoal) streak7++; });
+    return Math.min(streak7 / 7, 1);
+  }
+  if (a.id === 'first') return state.configured ? 1 : 0;
+  if (a.id === 'sleep8') {
+    var sl = state.sleep || {};
+    var bestSleep = 0;
+    Object.values(sl).forEach(function(v){ if (v && v.hours > bestSleep) bestSleep = v.hours; });
+    return Math.min(bestSleep / 8, 1);
+  }
+  return 0;
+}
+
+/* ===== WEIGHT FORECAST (Linear Regression) ===== */
+function drawWeightForecast(){
+  var canvas = document.getElementById('weightForecast');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var entries = Object.entries(S.weight).sort(function(a,b){ return a[0].localeCompare(b[0]); });
+  if (entries.length < 3) {
+    ctx.fillStyle = '#55556a';
+    ctx.font = '14px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Mind. 3 Gewichtseintraege fuer Prognose', W / 2, H / 2);
+    return;
+  }
+
+  // Convert dates to day indices relative to first entry
+  var d0 = new Date(entries[0][0]).getTime();
+  var dataPoints = entries.map(function(e){
+    return {x: (new Date(e[0]).getTime() - d0) / 86400000, y: e[1]};
+  });
+
+  // Linear regression: y = mx + b
+  var n = dataPoints.length;
+  var sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  dataPoints.forEach(function(p){ sumX += p.x; sumY += p.y; sumXY += p.x * p.y; sumXX += p.x * p.x; });
+  var denom = n * sumXX - sumX * sumX;
+  var m = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
+  var b = (sumY - m * sumX) / n;
+
+  // Projected points: 7 days beyond last data point
+  var lastDay = dataPoints[dataPoints.length - 1].x;
+  var projectedPoints = [];
+  for (var i = 1; i <= 7; i++) {
+    projectedPoints.push({x: lastDay + i, y: m * (lastDay + i) + b});
+  }
+
+  var allPoints = dataPoints.concat(projectedPoints);
+  var allY = allPoints.map(function(p){ return p.y; });
+  var minV = Math.min.apply(null, allY) - 0.5;
+  var maxV = Math.max.apply(null, allY) + 0.5;
+  var rangeV = maxV - minV || 1;
+  var maxX = allPoints[allPoints.length - 1].x;
+
+  var pad = {l:50, r:20, t:25, b:45};
+  var gw = W - pad.l - pad.r;
+  var gh = H - pad.t - pad.b;
+
+  function toCanvasX(xVal){ return pad.l + (xVal / maxX) * gw; }
+  function toCanvasY(yVal){ return pad.t + gh * (1 - (yVal - minV) / rangeV); }
+
+  // Grid lines
+  ctx.strokeStyle = '#222228';
+  ctx.lineWidth = 1;
+  for (var g = 0; g <= 4; g++) {
+    var gy = pad.t + gh * (g / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(W - pad.r, gy); ctx.stroke();
+    ctx.fillStyle = '#55556a'; ctx.font = '11px DM Mono, monospace'; ctx.textAlign = 'right';
+    ctx.fillText((maxV - rangeV * (g / 4)).toFixed(1), pad.l - 8, gy + 4);
+  }
+
+  // Data line (solid green)
+  ctx.beginPath();
+  ctx.strokeStyle = '#6ee7b7';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  dataPoints.forEach(function(p, i){
+    var cx = toCanvasX(p.x), cy = toCanvasY(p.y);
+    if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+  });
+  ctx.stroke();
+
+  // Data dots (green)
+  dataPoints.forEach(function(p){
+    ctx.beginPath();
+    ctx.arc(toCanvasX(p.x), toCanvasY(p.y), 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6ee7b7'; ctx.fill();
+    ctx.strokeStyle = '#111114'; ctx.lineWidth = 2; ctx.stroke();
+  });
+
+  // Projected line (dashed accent)
+  ctx.beginPath();
+  ctx.strokeStyle = 'var(--accent, #6ee7b7)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  var lastData = dataPoints[dataPoints.length - 1];
+  ctx.moveTo(toCanvasX(lastData.x), toCanvasY(lastData.y));
+  projectedPoints.forEach(function(p){
+    ctx.lineTo(toCanvasX(p.x), toCanvasY(p.y));
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Projected dots (semi-transparent)
+  projectedPoints.forEach(function(p){
+    ctx.beginPath();
+    ctx.arc(toCanvasX(p.x), toCanvasY(p.y), 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(110,231,183,0.4)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(110,231,183,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // Date labels
+  ctx.fillStyle = '#55556a'; ctx.font = '10px DM Sans, sans-serif'; ctx.textAlign = 'center';
+  var baseDate = new Date(entries[0][0]);
+  allPoints.forEach(function(p, idx){
+    if (idx % Math.max(1, Math.floor(allPoints.length / 7)) === 0 || idx === allPoints.length - 1) {
+      var dd = new Date(baseDate.getTime() + p.x * 86400000);
+      ctx.fillText(dd.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'}).slice(0,5), toCanvasX(p.x), H - 8);
+    }
+  });
+
+  // Forecast text label
+  var forecastVal = projectedPoints[projectedPoints.length - 1].y;
+  var forecastEl = document.getElementById('forecastText');
+  if (forecastEl) {
+    forecastEl.textContent = 'Prognose in 7 Tagen: ' + forecastVal.toFixed(1) + ' kg';
+  }
 }
 
 function drawWeightChart(){
@@ -2068,14 +2369,30 @@ function renderStats(c){
     html += '<div style="color:var(--text2);font-size:13px">Startgewicht: <strong>' + S.startWeight.toFixed(1) + ' kg</strong> — Tracke Gewicht im Track-Tab für Verlauf.</div></div>';
   }
 
+  // Weight Forecast
+  if (weightKeys.length >= 3) {
+    html += '<div class="card"><div class="card-title">\uD83D\uDD2E Gewichts-Prognose (7 Tage)</div>';
+    html += '<canvas id="weightForecast" width="600" height="220"></canvas>';
+    html += '<div id="forecastText" style="text-align:center;font-size:14px;font-weight:600;color:var(--accent);margin-top:8px"></div>';
+    html += '</div>';
+  }
+
   // Achievements
+  var achMaxMs = 0;
+  if (info.active && info.started && info.type === 'continuous') achMaxMs = info.elapsed;
+  (S.history || []).forEach(function(h){ if (h.duration > achMaxMs) achMaxMs = h.duration; });
   html += '<div class="card"><div class="card-title">🏆 Erfolge (' + Object.keys(S.achievements).length + '/' + ACHIEVEMENTS.length + ')</div><div class="badge-grid">';
   ACHIEVEMENTS.forEach(function(a){
     var u = S.achievements[a.id];
     html += '<div class="badge-item' + (u ? ' unlocked' : '') + '">';
     html += '<span class="b-ico">' + a.emoji + '</span>';
     html += '<div class="b-name">' + a.name + '</div>';
-    html += '<div class="b-date">' + (u ? u.date : '🔒') + '</div>';
+    html += '<div class="b-date">' + (u ? u.date : '\uD83D\uDD12') + '</div>';
+    if (!u) {
+      var prog = getAchievementProgress(a, S, achMaxMs);
+      var progPct = Math.round(prog * 100);
+      html += '<div class="ach-progress"><div class="ach-progress-fill" style="width:' + progPct + '%"></div></div>';
+    }
     html += '</div>';
   });
   html += '</div></div>';
@@ -2143,9 +2460,10 @@ function renderStats(c){
   html += '</div>';
   c.innerHTML = html;
 
-  // Draw water chart + mood chart
+  // Draw water chart + mood chart + weight forecast
   drawWaterBarChart();
   setTimeout(drawMoodChart, 60);
+  setTimeout(drawWeightForecast, 80);
 
   // Share listener
   var shareBtn = c.querySelector('#shareBtn');
@@ -2275,6 +2593,29 @@ function renderInfo(c){
   html += '<div class="warn-box"><p>⛔ <strong>NICHT als Erstes:</strong> Fleisch, Milchprodukte, Nüsse, rohes Gemüse, Brot, Zucker, Alkohol, große Portionen. Refeeding-Syndrom ist bei langem Fasten eine reale Gefahr!</p></div>';
   html += '</div>';
 
+  // Refeed Rezepte
+  html += '<div class="info-section"><h3>\uD83C\uDF73 Rezepte fuer Refeed</h3>';
+  html += '<div class="info-block"><h4>\uD83E\uDD64 Snake Juice (erweitertes Rezept)</h4>';
+  html += '<p><strong>Zutaten:</strong> 1L Wasser + 1 TL Himalaya-Salz + 1/2 TL No-Salt (Kaliumchlorid) + 1/2 TL Natron (Natriumbicarbonat)</p>';
+  html += '<p style="margin-top:4px"><strong>Zubereitung:</strong> Alles in eine Flasche geben und gut schuetteln. Ueber den Tag verteilt trinken (nicht auf einmal!). Kann mit etwas Zitronensaft geschmacklich aufgebessert werden.</p>';
+  html += '<p style="margin-top:4px;font-size:11px;color:var(--text3)">\uD83D\uDCA1 Tipp: 2-3 Flaschen pro Tag bei laengeren Fasten. Kalt schmeckt es besser.</p></div>';
+
+  html += '<div class="info-block"><h4>\uD83E\uDD62 Knochenbruehe</h4>';
+  html += '<p><strong>Zutaten:</strong> 1kg Rinder- oder Huehnerknochen, 2L Wasser, 2 EL Apfelessig, 1 TL Salz, Lorbeerblatt</p>';
+  html += '<p style="margin-top:4px"><strong>Zubereitung:</strong> Knochen mit kaltem Wasser und Essig aufsetzen. Langsam zum Kochen bringen, dann auf niedrigster Stufe 12-24h koecheln lassen. Durch ein Sieb giessen. Mit Salz abschmecken.</p>';
+  html += '<p style="margin-top:4px;font-size:11px;color:var(--text3)">\uD83D\uDCA1 Tipp: In Eiswuerfelformen einfrieren fuer schnelle Portionen.</p></div>';
+
+  html += '<div class="info-block"><h4>\uD83E\uDD51 Erste Mahlzeit nach 3+ Tagen</h4>';
+  html += '<p><strong>Rezept:</strong> 1/2 Avocado + 1 weichgekochtes Ei, gewuerzt mit Himalaya-Salz und etwas Pfeffer.</p>';
+  html += '<p style="margin-top:4px;font-size:12px;color:var(--text2)">Sehr langsam essen (mind. 15 Minuten). Kleine Bissen, gruendlich kauen. 2h Pause vor der naechsten Mahlzeit.</p></div>';
+
+  html += '<div class="info-block"><h4>\uD83C\uDF75 Erste Mahlzeit nach 7+ Tagen</h4>';
+  html += '<p><strong>Schritt 1:</strong> 200ml warme Knochenbruehe — 2 Stunden warten</p>';
+  html += '<p><strong>Schritt 2:</strong> 1/2 Avocado pur, mit Salz — weitere 2 Stunden warten</p>';
+  html += '<p><strong>Schritt 3:</strong> Weichgekochtes Ei oder kleine Portion gedaempftes Gemuese</p>';
+  html += '<p style="margin-top:4px;font-size:11px;color:var(--warn)">\u26A0\uFE0F Nach 7+ Tagen ist das Refeeding-Syndrom eine reale Gefahr. Niemals mit grossen Portionen oder Kohlenhydraten starten!</p></div>';
+  html += '</div>';
+
   // Intervallfasten
   html += '<div class="info-section"><h3>⏰ Intervallfasten-Modi</h3>';
   html += '<div class="info-block"><h4>16:8 — Anfänger-freundlich</h4><p>16 Stunden fasten, 8 Stunden Essens-Fenster. Ideal für den Einstieg ins Intervallfasten. Typisch: 12:00-20:00 Uhr essen. Bereits nach 12h beginnt die Fettverbrennung.</p></div>';
@@ -2293,7 +2634,35 @@ function renderInfo(c){
   html += '<div class="info-block"><h4>🟡 Normal und kein Grund zur Sorge:</h4><p>Leichte Kopfschmerzen (Elektrolyte!), Müdigkeit in den ersten 2-3 Tagen, Frösteln, Hunger in Wellen, leichter Schwindel beim Aufstehen (langsam aufstehen!). Diese Symptome vergehen meist.</p></div>';
   html += '</div>';
 
-  html += '<div style="text-align:center;color:var(--text3);font-size:11px;padding:16px;line-height:1.5">Diese Informationen ersetzen keine ärztliche Beratung.<br>Bei Vorerkrankungen immer Arzt konsultieren.</div>';
+  // Fasten-Plaene fuer Einsteiger
+  html += '<div class="info-section"><h3>\uD83D\uDCCB Fasten-Plaene fuer Einsteiger</h3>';
+
+  html += '<div class="plan-card" style="border-left-color:#60a5fa"><h4>\uD83C\uDF31 Anfaenger-Plan (4 Wochen)</h4>';
+  html += '<div class="plan-step"><strong>Woche 1:</strong> 12h Fasten / 12h Essen — Einfacher Einstieg, letztes Essen um 19 Uhr, Fruehstueck um 7 Uhr</div>';
+  html += '<div class="plan-step"><strong>Woche 2:</strong> 14h Fasten / 10h Essen — Fruehstueck auf 9 Uhr verschieben</div>';
+  html += '<div class="plan-step"><strong>Woche 3:</strong> 16:8 — Klassisches Intervallfasten. Essens-Fenster 12-20 Uhr</div>';
+  html += '<div class="plan-step"><strong>Woche 4:</strong> 18:6 — Fortgeschritten. Essens-Fenster 12-18 Uhr</div>';
+  html += '<div class="plan-tip">\uD83D\uDCA1 Tipp: Hoere auf deinen Koerper. Wenn eine Stufe zu schwer ist, bleib laenger auf der vorherigen.</div>';
+  html += '<div class="plan-warn">\u26A0\uFE0F Nicht geeignet bei Essstoerungen, Schwangerschaft oder Untergewicht.</div></div>';
+
+  html += '<div class="plan-card" style="border-left-color:#a78bfa"><h4>\u26A1 Fortgeschrittenen-Plan</h4>';
+  html += '<div class="plan-step"><strong>Taeglich:</strong> 16:8 oder 18:6 Intervallfasten als Basis</div>';
+  html += '<div class="plan-step"><strong>Monatlich:</strong> Ein 48h Wasserfasten (Freitag Abend bis Sonntag Abend)</div>';
+  html += '<div class="plan-step"><strong>Quartal:</strong> Ein 5-Tage Extended Fast mit Elektrolyten</div>';
+  html += '<div class="plan-tip">\uD83D\uDCA1 Tipp: Die 48h-Fasten am Wochenende sind leichter, weil weniger Stress und Ablenkung.</div>';
+  html += '<div class="plan-warn">\u26A0\uFE0F Bei laengeren Fasten unbedingt Elektrolyte supplementieren!</div></div>';
+
+  html += '<div class="plan-card" style="border-left-color:#f472b6"><h4>\uD83E\uDDEC Autophagie-Fokus Plan</h4>';
+  html += '<div class="plan-step"><strong>Basis:</strong> Taegliches 16:8 Intervallfasten</div>';
+  html += '<div class="plan-step"><strong>Alle 2 Monate:</strong> 3 Tage Wasserfasten (72h) fuer maximale Autophagie</div>';
+  html += '<div class="plan-step"><strong>Vorbereitung:</strong> 2 Tage vorher Kohlenhydrate reduzieren, um den Einstieg zu erleichtern</div>';
+  html += '<div class="plan-step"><strong>Nachbereitung:</strong> Sanftes Refeed ueber 24h (siehe Refeed-Protokoll oben)</div>';
+  html += '<div class="plan-tip">\uD83D\uDCA1 Tipp: Ab 24h beginnt Autophagie, ab 48h wird sie intensiv, ab 72h erreicht sie den Peak.</div>';
+  html += '<div class="plan-warn">\u26A0\uFE0F Langfasten nur mit Erfahrung und aerztlicher Ruecksprache bei Vorerkrankungen.</div></div>';
+
+  html += '</div>';
+
+  html += '<div style="text-align:center;color:var(--text3);font-size:11px;padding:16px;line-height:1.5">Diese Informationen ersetzen keine aerztliche Beratung.<br>Bei Vorerkrankungen immer Arzt konsultieren.</div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -2322,6 +2691,14 @@ function renderMenu(c){
     html += '<div class="sound-opt' + (S.soundType === s.id ? ' sel' : '') + '" data-sound="' + s.id + '">';
     html += '<span class="sound-ico">' + s.ico + '</span>' + s.name + '</div>';
   });
+  html += '</div></div>';
+
+  // Vibration Pattern
+  html += '<div class="card"><div class="card-title">\uD83D\uDCF3 Vibrations-Muster</div>';
+  html += '<div class="vib-grid">';
+  html += '<button class="vib-btn' + (S.vibratePattern === 'sanft' ? ' sel' : '') + '" data-vib="sanft">Sanft</button>';
+  html += '<button class="vib-btn' + (S.vibratePattern === 'normal' ? ' sel' : '') + '" data-vib="normal">Normal</button>';
+  html += '<button class="vib-btn' + (S.vibratePattern === 'stark' ? ' sel' : '') + '" data-vib="stark">Stark</button>';
   html += '</div></div>';
 
   // Settings
@@ -2354,7 +2731,7 @@ function renderMenu(c){
   html += '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + HUNGER_TIPS[Math.floor(Math.random() * HUNGER_TIPS.length)] + '</div></div>';
 
   // Version
-  html += '<div class="version-info">Fasten Tracker v5.0<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome · Schüttle für Motivation!</span></div>';
+  html += '<div class="version-info" id="versionInfo">Fasten Tracker v7.0<br>Made with \uD83D\uDC9A fuer bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome \u00B7 Schuettle fuer Motivation!</span></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -2402,6 +2779,15 @@ function renderMenu(c){
       S.soundType = btn.dataset.sound; save();
       c.querySelectorAll('.sound-opt').forEach(function(x){ x.classList.toggle('sel', x.dataset.sound === S.soundType); });
       playChime(); // Preview
+    });
+  });
+
+  // Vibration pattern selection
+  c.querySelectorAll('.vib-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      S.vibratePattern = btn.dataset.vib; save();
+      c.querySelectorAll('.vib-btn').forEach(function(x){ x.classList.toggle('sel', x.dataset.vib === S.vibratePattern); });
+      try { navigator.vibrate(getVibrationPattern()); } catch(e){}
     });
   });
 
@@ -2497,7 +2883,16 @@ function startTicker(){
       tRing.setAttribute('stroke-dashoffset', (ringC * (1 - info.progress)).toFixed(1));
       tRing.setAttribute('stroke', getPhaseColor(info));
     }
-    if (tEl) tEl.textContent = '⏱ ' + fmtDurLong(info.elapsed);
+    if (tEl) tEl.textContent = '\u23F1 ' + fmtDurLong(info.elapsed);
+
+    // Update interval countdown
+    var intCountdown = document.getElementById('intervalCountdown');
+    if (intCountdown && info.type === 'interval') {
+      var cdLabel = info.inEating
+        ? '\uD83D\uDD25 Fasten startet in ' + fmtDur(info.remaining)
+        : '\uD83C\uDF7D Naechste Mahlzeit in ' + fmtDur(info.remaining);
+      intCountdown.textContent = cdLabel;
+    }
 
     checkAchievements();
   }, 1000);
@@ -2594,19 +2989,59 @@ function init(){
       var info = getFastInfo();
       if (info.active && info.started && !info.completed) {
         showToast('💪 ' + getRandomQuote());
-        try { navigator.vibrate(100); } catch(e2){}
+        try { navigator.vibrate(getVibrationPattern()); } catch(e2){}
       }
     }
   });
 
   // Keyboard shortcut: Space for new quote on timer
+  // Konami Code: Up Up Down Down Left Right Left Right
+  var konamiSeq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+  var konamiPos = 0;
+  var konamiTapCount = 0;
+  var konamiTapTimer = null;
+
   document.addEventListener('keydown', function(e){
     if (e.code === 'Space' && S.tab === 'timer') {
       e.preventDefault();
       var em = document.querySelector('#qMotiv em');
       if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
     }
+    // Konami code detection (keyboard)
+    if (e.key === konamiSeq[konamiPos]) {
+      konamiPos++;
+      if (konamiPos >= konamiSeq.length) {
+        konamiPos = 0;
+        triggerKonami();
+      }
+    } else {
+      konamiPos = 0;
+    }
   });
+
+  // Konami code on mobile: 8 taps on version info
+  document.addEventListener('click', function(e){
+    var vInfo = document.getElementById('versionInfo');
+    if (vInfo && vInfo.contains(e.target)) {
+      konamiTapCount++;
+      clearTimeout(konamiTapTimer);
+      konamiTapTimer = setTimeout(function(){ konamiTapCount = 0; }, 3000);
+      if (konamiTapCount >= 8) {
+        konamiTapCount = 0;
+        triggerKonami();
+      }
+    }
+  });
+}
+
+function triggerKonami(){
+  fireKonfetti();
+  setTimeout(fireKonfetti, 300);
+  showToast('\uD83C\uDFAE Cheat Code aktiviert! +1000 Motivation!');
+  playChime();
+  try { navigator.vibrate(getVibrationPattern()); } catch(e){}
+  var app = document.getElementById('app');
+  if (app) { app.classList.add('konami-flash'); setTimeout(function(){ app.classList.remove('konami-flash'); }, 700); }
 }
 
 // Ensure audio context can be created on user interaction
