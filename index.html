@@ -353,7 +353,11 @@ const ACHIEVEMENTS = [
   {id:'mood7',name:'Stimmungs-Check',emoji:'🧠',desc:'7 Mood-Einträge',
    check:function(s){return Object.keys(s.moods||{}).length>=7}},
   {id:'weight5',name:'Gewichts-Tracker',emoji:'⚖️',desc:'5 Gewichtseinträge',
-   check:function(s){return Object.keys(s.weight||{}).length>=5}}
+   check:function(s){return Object.keys(s.weight||{}).length>=5}},
+  {id:'streak3',name:'3er-Serie',emoji:'🔥',desc:'3 Fasten hintereinander geschafft',
+   check:function(){return calcStreak().best>=3}},
+  {id:'streak5',name:'Serien-Meister',emoji:'🔥',desc:'5 Fasten hintereinander geschafft',
+   check:function(){return calcStreak().best>=5}}
 ];
 
 const SYMPTOMS = [
@@ -682,6 +686,35 @@ function checkAchievements(){
     }
   });
   if (changed) save();
+}
+
+/* ===== STREAK CALCULATION ===== */
+function calcStreak(){
+  var hist = (S.history || []).slice();
+  var info = getFastInfo();
+  var activeFast = (info.active && info.started && !info.completed) ? 1 : 0;
+  if (hist.length === 0) return { current: activeFast, best: activeFast };
+
+  // Sort newest first
+  hist.sort(function(a, b){ return new Date(b.endDate || 0) - new Date(a.endDate || 0); });
+
+  // Current streak: count from newest while completed
+  var current = 0;
+  for (var i = 0; i < hist.length; i++) {
+    if (hist[i].completed) current++;
+    else break;
+  }
+  current += activeFast;
+
+  // Best streak: scan chronologically (oldest first)
+  hist.reverse();
+  var best = 0, run = 0;
+  for (var j = 0; j < hist.length; j++) {
+    if (hist[j].completed) { run++; if (run > best) best = run; }
+    else { run = 0; }
+  }
+  best = Math.max(best, current);
+  return { current: current, best: best };
 }
 
 /* ===== NOTIFICATIONS ===== */
@@ -1180,9 +1213,29 @@ function renderStats(c){
   html += '<div class="card"><div class="card-title">📊 Übersicht</div><div class="stat-grid">';
   html += '<div class="stat-item"><div class="stat-val">' + Math.round(totalFasted / 3600000) + '</div><div class="stat-label">Stunden gefastet</div></div>';
   html += '<div class="stat-item"><div class="stat-val">' + completedCount + '</div><div class="stat-label">Abgeschlossen</div></div>';
-  html += '<div class="stat-item"><div class="stat-val">' + (S.history || []).length + '</div><div class="stat-label">Fasten gesamt</div></div>';
+  var streak = calcStreak();
+  html += '<div class="stat-item"><div class="stat-val">' + streak.current + (streak.best > streak.current ? ' <span style="font-size:11px;color:var(--text3)">(Best: ' + streak.best + ')</span>' : '') + '</div><div class="stat-label">🔥 Streak</div></div>';
   html += '<div class="stat-item"><div class="stat-val">' + waterAvg + '</div><div class="stat-label">\u2300 Gläser/Tag</div></div>';
   html += '</div></div>';
+
+  // Weight delta
+  var weightKeys = Object.keys(S.weight || {}).sort();
+  if (weightKeys.length >= 2) {
+    var firstW = S.weight[weightKeys[0]];
+    var lastW = S.weight[weightKeys[weightKeys.length - 1]];
+    var delta = lastW - firstW;
+    var deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(1) + ' kg';
+    var deltaColor = delta <= 0 ? 'var(--accent)' : 'var(--warn)';
+    html += '<div class="card"><div class="card-title">⚖️ Gewichtsverlauf</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">';
+    html += '<div><span style="color:var(--text2);font-size:13px">Start:</span> <span style="font-weight:600">' + firstW.toFixed(1) + ' kg</span></div>';
+    html += '<div style="font-size:22px;font-weight:700;color:' + deltaColor + '">' + deltaStr + '</div>';
+    html += '<div><span style="color:var(--text2);font-size:13px">Aktuell:</span> <span style="font-weight:600">' + lastW.toFixed(1) + ' kg</span></div>';
+    html += '</div></div>';
+  } else if (S.startWeight > 0) {
+    html += '<div class="card"><div class="card-title">⚖️ Gewicht</div>';
+    html += '<div style="color:var(--text2);font-size:13px">Startgewicht: <strong>' + S.startWeight.toFixed(1) + ' kg</strong> — Tracke Gewicht im Track-Tab für Verlauf.</div></div>';
+  }
 
   // Achievements
   html += '<div class="card"><div class="card-title">🏆 Erfolge (' + Object.keys(S.achievements).length + '/' + ACHIEVEMENTS.length + ')</div><div class="badge-grid">';
@@ -1333,11 +1386,13 @@ function renderMenu(c){
   }
   html += '<button class="btn btn-surface btn-block" id="menuNew" style="margin-bottom:10px">🆕 Neues Fasten / Modus ändern</button>';
   html += '<button class="btn btn-surface btn-block" id="menuExport" style="margin-bottom:10px">📦 Daten exportieren (JSON)</button>';
+  html += '<button class="btn btn-surface btn-block" id="menuImport" style="margin-bottom:10px">📥 Daten importieren (JSON)</button>';
+  html += '<input type="file" id="menuImportFile" accept=".json" style="display:none">';
   html += '<button class="btn btn-danger btn-block" id="menuReset">🗑 Alle Daten löschen</button>';
   html += '</div>';
 
   // Version
-  html += '<div class="version-info">Fasten Tracker v4.0<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
+  html += '<div class="version-info">Fasten Tracker v4.1<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -1384,6 +1439,27 @@ function renderMenu(c){
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  });
+
+  var importBtn = c.querySelector('#menuImport');
+  var importFile = c.querySelector('#menuImportFile');
+  importBtn.addEventListener('click', function(){ importFile.click(); });
+  importFile.addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var imported = JSON.parse(ev.target.result);
+        if (!imported.tab && !imported.mode) { alert('Ungültige Datei.'); return; }
+        if (!confirm('Daten importieren? Aktuelle Daten werden überschrieben.')) return;
+        S = Object.assign(defaultState(), imported);
+        save();
+        renderTab();
+        alert('✅ Import erfolgreich!');
+      } catch(err) { alert('Fehler beim Import: ' + err.message); }
+    };
+    reader.readAsText(file);
   });
 
   c.querySelector('#menuReset').addEventListener('click', function(){
