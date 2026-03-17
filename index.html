@@ -280,6 +280,55 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 /* Water splash */
 @keyframes splash{0%{transform:scale(1)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
 .water-splash .qw-count{animation:splash .25s ease}
+
+/* Breathing Exercise */
+#breathOverlay{position:fixed;inset:0;z-index:180;display:none;align-items:center;justify-content:center;
+  background:rgba(7,7,9,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+#breathOverlay.show{display:flex}
+.breath-circle{width:120px;height:120px;border-radius:50%;border:3px solid var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--accent);
+  transition:transform ease,border-color .4s}
+.breath-circle.inhale{transform:scale(1.7);border-color:var(--accent)}
+.breath-circle.hold{transform:scale(1.7);border-color:var(--warn)}
+.breath-circle.exhale{transform:scale(1);border-color:#60a5fa}
+
+/* Coffee Tracker */
+.coffee-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0}
+.coffee-cup{font-size:26px;opacity:.2;transition:opacity .2s,transform .2s;cursor:pointer}
+.coffee-cup.filled{opacity:1}
+.coffee-cup:active{transform:scale(1.2)}
+
+/* Savings Cards */
+.savings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.savings-card{background:var(--surface2);border-radius:var(--radius-sm);padding:16px;text-align:center}
+.savings-val{font-size:26px;font-weight:700;font-family:'DM Mono',monospace}
+.savings-val.green{color:var(--accent)}
+.savings-val.yellow{color:var(--warn)}
+.savings-label{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* Calendar Heatmap */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{aspect-ratio:1;border-radius:4px;background:var(--surface3);display:flex;align-items:center;
+  justify-content:center;font-size:9px;color:var(--text3);font-family:'DM Mono',monospace}
+.cal-cell.fasted{background:rgba(110,231,183,.2);color:var(--accent)}
+.cal-cell.today{border:1.5px solid var(--accent)}
+.cal-head{font-size:9px;color:var(--text3);text-align:center;padding:2px 0;font-weight:600}
+
+/* Water Bar Chart */
+#waterChart{width:100%;height:100px;display:block;border-radius:var(--radius-sm);background:var(--surface2);margin-top:8px}
+
+/* Sound Selection */
+.sound-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sound-opt{padding:10px 8px;background:var(--surface2);border:2px solid transparent;border-radius:var(--radius-sm);
+  text-align:center;font-size:12px;cursor:pointer;transition:all .15s}
+.sound-opt.sel{border-color:var(--accent);background:rgba(110,231,183,.08)}
+.sound-ico{font-size:22px;display:block;margin-bottom:3px}
+
+/* Breath Button */
+.breath-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(96,165,250,.1);
+  border:1px solid rgba(96,165,250,.25);border-radius:var(--radius-sm);color:#60a5fa;font-size:13px;
+  font-weight:500;cursor:pointer;transition:all .15s;width:100%;justify-content:center;margin-top:10px}
+.breath-btn:active{background:rgba(96,165,250,.2);transform:scale(.98)}
 </style>
 </head>
 <body>
@@ -322,6 +371,17 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
     <div class="motiv-quote" id="mQuote"></div>
     <button class="motiv-dismiss" id="mDismiss">💪 Weiter kämpfen!</button>
     <div class="motiv-next" id="mNext"></div>
+  </div>
+</div>
+
+<!-- Breathing Exercise -->
+<div id="breathOverlay">
+  <div style="text-align:center;padding:20px">
+    <div class="breath-circle" id="breathCircle">Bereit</div>
+    <div style="margin-top:20px;color:var(--text2);font-size:15px;font-weight:500" id="breathText">4-7-8 Atemtechnik</div>
+    <div style="margin-top:6px;color:var(--text3);font-size:12px" id="breathCount">Tippe zum Starten</div>
+    <button class="btn btn-surface" style="margin-top:28px" id="breathStart">▶️ Start</button>
+    <button class="btn btn-surface" style="margin-top:10px" id="breathClose">Schließen</button>
   </div>
 </div>
 
@@ -502,9 +562,23 @@ const QUOTES = {
     'Nachtschicht für deine Zellen — Autophagie auf Maximum.',
     'Träume von deinem stärkeren, gesünderen Ich.',
     'Die Nacht vergeht — und du wirst stärker aufwachen.',
-    'Jede Stunde Schlaf im Fasten ist doppelt wertvoll.'
+    'Jede Stunde Schlaf im Fasten ist doppelt wertvoll.',
+    'Morgen wachst du leichter auf. Buchstäblich.',
+    'Dein Körper repariert sich jetzt — lass ihn arbeiten.'
   ]
 };
+
+// Hunger-Tipps für die Atemübung
+const HUNGER_TIPS = [
+  'Hunger kommt in Wellen — er geht IMMER vorbei. Meist in 15-20 Minuten.',
+  'Trink ein großes Glas Wasser mit einer Prise Salz. Oft ist es nur Durst.',
+  'Geh 5 Minuten spazieren. Bewegung unterdrückt Ghrelin (Hungerhormon).',
+  'Schwarzer Kaffee oder grüner Tee — natürliche Appetitzügler.',
+  'Denk an dein WARUM. Warum fastest du? Das ist stärker als Hunger.',
+  'Hunger ist nur ein Signal, keine Notsituation. Dein Körper hat genug Reserven.',
+  'Kaue auf einem Eiswürfel — beschäftigt den Mund, null Kalorien.',
+  'Atme tief: 4 Sekunden ein, 7 halten, 8 aus. Hunger wird weniger.',
+];
 
 const MODE_INFO = [
   {id:'water',name:'Wasserfasten',emoji:'💧',desc:'Mehrtägig, nur Wasser'},
@@ -533,6 +607,9 @@ function defaultState(){
     weight:{}, startWeight:0,
     moods:{}, symptoms:{}, journal:{},
     elektrolyteChecks:{},
+    coffee:{}, coffeeMax:3,
+    soundType:'chime',
+    dailyMealCost:15, dailyCalories:2000,
     tab:'timer', mseed:0,
     history:[], achievements:{}
   };
@@ -559,25 +636,111 @@ var audioCtx = null;
 
 function playChime(){
   if (!S.soundOn) return;
+  var type = S.soundType || 'chime';
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    var notes = [880, 1318.5, 1760]; // A5, E6, A6
     var now = audioCtx.currentTime;
-    for (var i = 0; i < notes.length; i++) {
-      var osc = audioCtx.createOscillator();
-      var gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = notes[i];
-      gain.gain.setValueAtTime(0, now + i * 0.18);
-      gain.gain.linearRampToValueAtTime(0.15, now + i * 0.18 + 0.06);
-      gain.gain.linearRampToValueAtTime(0, now + i * 0.18 + 0.5);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now + i * 0.18);
-      osc.stop(now + i * 0.18 + 0.6);
+
+    if (type === 'chime') {
+      var notes = [880, 1318.5, 1760];
+      for (var i = 0; i < notes.length; i++) {
+        var o = audioCtx.createOscillator(); var g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = notes[i];
+        g.gain.setValueAtTime(0, now + i * .18);
+        g.gain.linearRampToValueAtTime(0.15, now + i * .18 + .06);
+        g.gain.linearRampToValueAtTime(0, now + i * .18 + .5);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(now + i * .18); o.stop(now + i * .18 + .6);
+      }
+    } else if (type === 'tropfen') {
+      [1200, 900, 600].forEach(function(f, i){
+        var o = audioCtx.createOscillator(); var g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.2, now + i * .15);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * .15 + .18);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(now + i * .15); o.stop(now + i * .15 + .25);
+      });
+    } else if (type === 'gong') {
+      var o1 = audioCtx.createOscillator(); var g1 = audioCtx.createGain();
+      o1.type = 'sine'; o1.frequency.value = 180;
+      g1.gain.setValueAtTime(0.25, now);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 2);
+      o1.connect(g1); g1.connect(audioCtx.destination);
+      o1.start(now); o1.stop(now + 2.1);
+      var o2 = audioCtx.createOscillator(); var g2 = audioCtx.createGain();
+      o2.type = 'sine'; o2.frequency.value = 540;
+      g2.gain.setValueAtTime(0.08, now + .05);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.start(now + .05); o2.stop(now + 1.6);
     }
   } catch(e) {}
+}
+
+/* ===== BREATHING EXERCISE ===== */
+var breathTimer = null;
+function startBreathing(){
+  clearInterval(breathTimer);
+  var circle = $('breathCircle');
+  var text = $('breathText');
+  var countEl = $('breathCount');
+  var phases = [{name:'Einatmen',dur:4,cls:'inhale'},{name:'Halten',dur:7,cls:'hold'},{name:'Ausatmen',dur:8,cls:'exhale'}];
+  var totalCycles = 3, cycle = 0, phase = 0, sec = 0;
+  circle.style.transition = 'transform 4s ease, border-color .4s';
+
+  function tick(){
+    var p = phases[phase];
+    circle.className = 'breath-circle ' + p.cls;
+    if (phase === 0) circle.style.transition = 'transform ' + p.dur + 's ease, border-color .4s';
+    else if (phase === 2) circle.style.transition = 'transform ' + p.dur + 's ease, border-color .4s';
+    circle.textContent = p.name;
+    text.textContent = (p.dur - sec) + 's';
+    countEl.textContent = 'Runde ' + (cycle + 1) + '/' + totalCycles;
+    sec++;
+    if (sec >= p.dur) {
+      sec = 0; phase++;
+      if (phase >= phases.length) {
+        phase = 0; cycle++;
+        if (cycle >= totalCycles) {
+          clearInterval(breathTimer); breathTimer = null;
+          circle.className = 'breath-circle';
+          circle.style.transition = 'transform .5s ease, border-color .4s';
+          circle.textContent = '✅';
+          text.textContent = 'Geschafft! Hunger verblasst.';
+          countEl.textContent = '';
+          try { navigator.vibrate(200); } catch(e2){}
+          return;
+        }
+      }
+    }
+  }
+  tick();
+  breathTimer = setInterval(tick, 1000);
+}
+
+/* ===== SHARE ===== */
+function shareProgress(){
+  var info = getFastInfo();
+  var lines = ['💧 Fasten Tracker'];
+  if (info.active && info.started) {
+    lines.push('⏱ ' + fmtDurLong(info.elapsed) + ' gefastet');
+    lines.push('📊 ' + Math.round(info.progress * 100) + '% geschafft');
+    if (info.phase) lines.push(info.phase.emoji + ' ' + info.phase.name);
+  }
+  var streak = calcStreak();
+  if (streak.current > 0) lines.push('🔥 Streak: ' + streak.current);
+  lines.push('🏆 ' + Object.keys(S.achievements).length + '/' + ACHIEVEMENTS.length + ' Erfolge');
+  lines.push('', '#FastenTracker #Gesundheit');
+  var text = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({title:'Fasten Tracker',text:text}).catch(function(){});
+  } else {
+    try {
+      navigator.clipboard.writeText(text).then(function(){ showToast('📋 Kopiert!'); });
+    } catch(e){ showToast('Text: ' + text.slice(0,60) + '...'); }
+  }
 }
 
 /* ===== TOAST ===== */
@@ -1144,10 +1307,11 @@ function renderTimer(c){
     html += '</div></div>';
   }
 
-  // Quick motivation
+  // Quick motivation + breathing
   html += '<div class="card"><div class="quick-motiv" id="qMotiv">';
   html += '<button class="refresh-btn" id="refreshQ">🔄</button>';
-  html += '<em>\u201E' + getSeededQuote() + '\u201C</em></div></div>';
+  html += '<em>\u201E' + getSeededQuote() + '\u201C</em></div>';
+  html += '<button class="breath-btn" id="breathBtn">🫁 Hunger? Atemübung starten (4-7-8)</button></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -1180,6 +1344,12 @@ function renderTimer(c){
       if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
     });
   }
+  var bBtn = c.querySelector('#breathBtn');
+  if (bBtn) {
+    bBtn.addEventListener('click', function(){
+      $('breathOverlay').classList.add('show');
+    });
+  }
 }
 
 /* ===== TRACK TAB ===== */
@@ -1191,6 +1361,7 @@ function renderTrack(c){
   var curSym = S.symptoms[d] || [];
   var curElec = S.elektrolyteChecks[d] || {};
   var curJournal = S.journal[d] || '';
+  var curCoffee = S.coffee[d] || 0;
 
   var html = '<div class="fade-in">';
 
@@ -1203,6 +1374,18 @@ function renderTrack(c){
   html += '<div class="water-progress"><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:' + wp + '%;background:var(--accent)"></div></div>';
   html += '<span>' + curWater + '/' + S.waterGoal + '</span></div>';
   html += '</div></div>';
+
+  // Coffee
+  html += '<div class="card"><div class="card-title">☕ Koffein <span style="font-weight:400;text-transform:none;letter-spacing:0">(max ' + S.coffeeMax + ' Tassen — schwarz, ohne alles!)</span></div>';
+  html += '<div class="coffee-row">';
+  for (var ci = 1; ci <= 5; ci++) {
+    html += '<span class="coffee-cup' + (ci <= curCoffee ? ' filled' : '') + '" data-cup="' + ci + '">☕</span>';
+  }
+  html += '</div>';
+  if (curCoffee > S.coffeeMax) {
+    html += '<div style="font-size:12px;color:var(--warn);text-align:center">⚠️ Über dem Limit! Zu viel Koffein kann Elektrolyte ausspülen.</div>';
+  }
+  html += '</div>';
 
   // Weight
   html += '<div class="card"><div class="card-title">⚖️ Gewicht</div>';
@@ -1243,6 +1426,16 @@ function renderTrack(c){
   c.innerHTML = html;
 
   // --- Event listeners ---
+  // Coffee cups
+  c.querySelectorAll('.coffee-cup').forEach(function(cup){
+    cup.addEventListener('click', function(){
+      var val = parseInt(cup.dataset.cup);
+      S.coffee[d] = (S.coffee[d] === val) ? val - 1 : val;
+      save();
+      c.querySelectorAll('.coffee-cup').forEach(function(x){ x.classList.toggle('filled', parseInt(x.dataset.cup) <= S.coffee[d]); });
+    });
+  });
+
   c.querySelector('#wPlus').addEventListener('click', function(){
     S.water[d] = (S.water[d] || 0) + 1; save(); checkAchievements(); renderTab();
   });
@@ -1405,6 +1598,24 @@ function renderStats(c){
   html += '<div class="stat-item"><div class="stat-val">' + waterAvg + '</div><div class="stat-label">\u2300 Gläser/Tag</div></div>';
   html += '</div></div>';
 
+  // Savings
+  var fastedDays = totalFasted / 86400000;
+  if (fastedDays > 0.1) {
+    var savedCal = Math.round(fastedDays * S.dailyCalories);
+    var savedMoney = (fastedDays * S.dailyMealCost).toFixed(2);
+    var savedKg = (savedCal / 7700).toFixed(1); // ~7700 kcal per kg body fat
+    html += '<div class="card"><div class="card-title">💰 Ersparnis</div><div class="savings-grid">';
+    html += '<div class="savings-card"><div class="savings-val yellow">' + savedCal.toLocaleString('de-DE') + '</div><div class="savings-label">kcal eingespart</div></div>';
+    html += '<div class="savings-card"><div class="savings-val green">' + savedMoney + ' €</div><div class="savings-label">Geld gespart</div></div>';
+    html += '<div class="savings-card"><div class="savings-val green">~' + savedKg + ' kg</div><div class="savings-label">Fett (theoretisch)</div></div>';
+    html += '<div class="savings-card"><div class="savings-val yellow">' + Math.round(fastedDays * 2.5) + ' L</div><div class="savings-label">Wasser getrunken</div></div>';
+    html += '</div></div>';
+  }
+
+  // Water chart (last 7 days)
+  html += '<div class="card"><div class="card-title">💧 Wasser (7 Tage)</div>';
+  html += '<canvas id="waterChart" width="600" height="200"></canvas></div>';
+
   // Weight delta
   var weightKeys = Object.keys(S.weight || {}).sort();
   if (weightKeys.length >= 2) {
@@ -1464,8 +1675,101 @@ function renderStats(c){
     html += '</div>';
   }
 
+  // Calendar Heatmap
+  html += '<div class="card"><div class="card-title">📅 Aktivitäts-Kalender (5 Wochen)</div>';
+  html += '<div class="cal-grid">';
+  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(day){ html += '<div class="cal-head">' + day + '</div>'; });
+  var calToday = new Date();
+  var calTodayStr = calToday.toISOString().slice(0,10);
+  var calStart = new Date(calToday);
+  calStart.setDate(calStart.getDate() - 34);
+  var calDow = calStart.getDay(); // 0=Sun
+  var calAdj = calDow === 0 ? -6 : 1 - calDow;
+  calStart.setDate(calStart.getDate() + calAdj);
+  for (var ci = 0; ci < 35; ci++) {
+    var cd = new Date(calStart);
+    cd.setDate(cd.getDate() + ci);
+    var ck = cd.toISOString().slice(0,10);
+    var isToday = ck === calTodayStr;
+    var tracked = S.water[ck] || S.moods[ck] || S.journal[ck];
+    var isFuture = cd > calToday;
+    html += '<div class="cal-cell' + (tracked ? ' fasted' : '') + (isToday ? ' today' : '') + '"';
+    if (isFuture) html += ' style="opacity:.15"';
+    html += '>' + cd.getDate() + '</div>';
+  }
+  html += '</div></div>';
+
+  // Share button
+  html += '<div style="text-align:center;margin:16px 0"><button class="btn btn-accent btn-sm" id="shareBtn" style="border-radius:50px;padding:12px 28px">📤 Fortschritt teilen</button></div>';
+
   html += '</div>';
   c.innerHTML = html;
+
+  // Draw water chart
+  drawWaterBarChart();
+
+  // Share listener
+  var shareBtn = c.querySelector('#shareBtn');
+  if (shareBtn) shareBtn.addEventListener('click', shareProgress);
+}
+
+function drawWaterBarChart(){
+  var canvas = document.getElementById('waterChart');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    var key = d.toISOString().slice(0,10);
+    days.push({label: d.toLocaleDateString('de-DE',{weekday:'short'}).slice(0,2), val: S.water[key] || 0});
+  }
+
+  var maxV = Math.max(S.waterGoal, Math.max.apply(null, days.map(function(d){return d.val;})));
+  if (maxV === 0) maxV = 10;
+  var barW = (W - 60) / 7;
+  var chartH = H - 50;
+  var padL = 35;
+
+  // Goal line
+  var goalY = 20 + chartH * (1 - S.waterGoal / maxV);
+  ctx.strokeStyle = 'rgba(110,231,183,0.3)';
+  ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, goalY); ctx.lineTo(W - 10, goalY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#55556a'; ctx.font = '10px DM Mono, monospace'; ctx.textAlign = 'right';
+  ctx.fillText(S.waterGoal + '', padL - 6, goalY + 4);
+
+  days.forEach(function(d, idx){
+    var barH = Math.max(2, (d.val / maxV) * chartH);
+    var x = padL + 5 + idx * barW;
+    var y = 20 + chartH - barH;
+    var w = barW - 10;
+
+    // Bar
+    ctx.fillStyle = d.val >= S.waterGoal ? '#6ee7b7' : '#2a2a32';
+    ctx.beginPath();
+    ctx.moveTo(x + 4, y); ctx.lineTo(x + w - 4, y);
+    ctx.arcTo(x + w, y, x + w, y + 4, 4);
+    ctx.lineTo(x + w, y + barH - 4);
+    ctx.arcTo(x + w, y + barH, x + w - 4, y + barH, 4);
+    ctx.lineTo(x + 4, y + barH);
+    ctx.arcTo(x, y + barH, x, y + barH - 4, 4);
+    ctx.lineTo(x, y + 4);
+    ctx.arcTo(x, y, x + 4, y, 4);
+    ctx.fill();
+
+    // Value
+    ctx.fillStyle = d.val >= S.waterGoal ? '#6ee7b7' : '#8888a0';
+    ctx.font = '12px DM Sans, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(d.val || '', x + w / 2, y - 6);
+
+    // Day label
+    ctx.fillStyle = '#55556a'; ctx.font = '11px DM Sans, sans-serif';
+    ctx.fillText(d.label, x + w / 2, H - 8);
+  });
 }
 
 /* ===== INFO TAB ===== */
@@ -1560,10 +1864,23 @@ function renderMenu(c){
   html += '<input type="number" class="num-input" id="notifMin" value="' + S.notifyMin + '" min="5" max="240"></div>';
   html += '</div>';
 
-  // Water goal
-  html += '<div class="card"><div class="card-title">💧 Einstellungen</div>';
+  // Sound selection
+  html += '<div class="card"><div class="card-title">🔊 Sound-Typ</div>';
+  html += '<div class="sound-grid">';
+  [{id:'chime',ico:'🔔',name:'Glockenspiel'},{id:'tropfen',ico:'💧',name:'Tropfen'},{id:'gong',ico:'🔔',name:'Gong'}].forEach(function(s){
+    html += '<div class="sound-opt' + (S.soundType === s.id ? ' sel' : '') + '" data-sound="' + s.id + '">';
+    html += '<span class="sound-ico">' + s.ico + '</span>' + s.name + '</div>';
+  });
+  html += '</div></div>';
+
+  // Settings
+  html += '<div class="card"><div class="card-title">⚙️ Einstellungen</div>';
   html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Wasserziel (Gläser/Tag)</div></div>';
   html += '<input type="number" class="num-input" id="waterGoalIn" value="' + S.waterGoal + '" min="1" max="30"></div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Tägliche Mahlzeitkosten (€)</div><div class="setting-desc">Für Ersparnis-Berechnung</div></div>';
+  html += '<input type="number" class="num-input" id="mealCostIn" value="' + S.dailyMealCost + '" min="1" max="100"></div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Tägliche Kalorien</div><div class="setting-desc">Für Ersparnis-Berechnung</div></div>';
+  html += '<input type="number" class="num-input" id="caloriesIn" value="' + S.dailyCalories + '" min="500" max="5000" step="100"></div>';
   html += '</div>';
 
   // Actions
@@ -1575,11 +1892,16 @@ function renderMenu(c){
   html += '<button class="btn btn-surface btn-block" id="menuExport" style="margin-bottom:10px">📦 Daten exportieren (JSON)</button>';
   html += '<button class="btn btn-surface btn-block" id="menuImport" style="margin-bottom:10px">📥 Daten importieren (JSON)</button>';
   html += '<input type="file" id="menuImportFile" accept=".json" style="display:none">';
+  html += '<button class="btn btn-surface btn-block" id="menuShare" style="margin-bottom:10px">📤 Fortschritt teilen</button>';
   html += '<button class="btn btn-danger btn-block" id="menuReset">🗑 Alle Daten löschen</button>';
   html += '</div>';
 
+  // Version + Hunger-Tipp
+  html += '<div class="card" style="border-left:3px solid #60a5fa"><div class="card-title">💡 Hunger-Tipp</div>';
+  html += '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + HUNGER_TIPS[Math.floor(Math.random() * HUNGER_TIPS.length)] + '</div></div>';
+
   // Version
-  html += '<div class="version-info">Fasten Tracker v4.2<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
+  html += '<div class="version-info">Fasten Tracker v5.0<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome · Schüttle für Motivation!</span></div>';
 
   html += '</div>';
   c.innerHTML = html;
@@ -1604,9 +1926,28 @@ function renderMenu(c){
   });
   c.querySelector('#waterGoalIn').addEventListener('change', function(){
     S.waterGoal = Math.max(1, Math.min(30, parseInt(this.value) || 10));
-    this.value = S.waterGoal;
-    save();
+    this.value = S.waterGoal; save();
   });
+  c.querySelector('#mealCostIn').addEventListener('change', function(){
+    S.dailyMealCost = Math.max(1, Math.min(100, parseFloat(this.value) || 15));
+    this.value = S.dailyMealCost; save();
+  });
+  c.querySelector('#caloriesIn').addEventListener('change', function(){
+    S.dailyCalories = Math.max(500, Math.min(5000, parseInt(this.value) || 2000));
+    this.value = S.dailyCalories; save();
+  });
+
+  // Sound selection
+  c.querySelectorAll('.sound-opt').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      S.soundType = btn.dataset.sound; save();
+      c.querySelectorAll('.sound-opt').forEach(function(x){ x.classList.toggle('sel', x.dataset.sound === S.soundType); });
+      playChime(); // Preview
+    });
+  });
+
+  // Share
+  c.querySelector('#menuShare').addEventListener('click', shareProgress);
 
   var endBtn = c.querySelector('#menuEnd');
   if (endBtn) {
@@ -1748,6 +2089,17 @@ function init(){
   });
   document.querySelector('.motiv-backdrop').addEventListener('click', function(){
     $('motivPopup').classList.remove('show');
+  });
+
+  // Breathing exercise
+  $('breathStart').addEventListener('click', startBreathing);
+  $('breathClose').addEventListener('click', function(){
+    clearInterval(breathTimer); breathTimer = null;
+    $('breathOverlay').classList.remove('show');
+    $('breathCircle').className = 'breath-circle';
+    $('breathCircle').textContent = 'Bereit';
+    $('breathText').textContent = '4-7-8 Atemtechnik';
+    $('breathCount').textContent = 'Tippe zum Starten';
   });
 
   // Initial render
