@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070709">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Fasten Tracker</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070709;--surface:#111114;--surface2:#1a1a1f;--surface3:#222228;
+  --border:#2a2a32;--text:#e4e4ea;--text2:#8888a0;--text3:#55556a;
+  --accent:#6ee7b7;--accent2:#34d399;--warn:#fbbf24;--danger:#f87171;
+  --radius:14px;--radius-sm:10px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',system-ui,-apple-system,sans-serif;
+  -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;padding-top:var(--safe-top)}
+.mono{font-family:'DM Mono',monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;
+  font-size:15px;width:100%;outline:none;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888a0' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+#app{flex:1;display:flex;flex-direction:column;overflow:hidden;max-width:480px;margin:0 auto;width:100%}
+.tab-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px calc(72px + var(--safe-bottom));scroll-behavior:smooth}
+.tab-content::-webkit-scrollbar{width:3px}
+
+.tab-bar{display:flex;background:rgba(17,17,20,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);padding:6px 4px calc(6px + var(--safe-bottom));position:relative;z-index:50}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;
+  font-size:10px;font-weight:500;color:var(--text3);transition:color .2s}
+.tab-btn.active{color:var(--accent)}
+.tab-btn .ico{font-size:20px;line-height:1}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;
+  border-radius:var(--radius-sm);font-weight:600;font-size:15px;transition:all .15s;user-select:none}
+.btn-accent{background:var(--accent);color:#070709}
+.btn-accent:active{background:var(--accent2);transform:scale(.97)}
+.btn-surface{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-surface:active{background:var(--surface3)}
+.btn-danger{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--danger)}
+.btn-danger:active{opacity:.7}
+.btn-sm{padding:8px 16px;font-size:13px;border-radius:8px}
+.btn-block{width:100%}
+
+.progress-bar{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease,background-color .5s ease}
+
+/* Setup */
+#setup{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;
+  overflow-y:auto;padding:24px 20px calc(24px + var(--safe-bottom));padding-top:calc(24px + var(--safe-top))}
+#setup.hidden{display:none}
+.setup-title{font-size:28px;font-weight:700;margin-bottom:4px}
+.setup-sub{color:var(--text2);margin-bottom:24px;font-size:15px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.mode-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);
+  padding:16px 12px;text-align:center;transition:all .2s;cursor:pointer}
+.mode-card.sel{border-color:var(--accent);background:var(--surface2)}
+.mode-card .mode-ico{font-size:28px;margin-bottom:6px}
+.mode-card .mode-name{font-weight:600;font-size:14px}
+.mode-card .mode-desc{font-size:11px;color:var(--text2);margin-top:4px}
+.setup-section{margin-bottom:16px}
+.setup-label{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;display:block}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+
+/* Motivation Popup */
+#motivPopup{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:20px;opacity:0;pointer-events:none;transition:opacity .35s ease}
+#motivPopup.show{opacity:1;pointer-events:auto}
+.motiv-backdrop{position:absolute;inset:0;background:rgba(7,7,9,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.motiv-content{position:relative;z-index:1;text-align:center;width:100%;max-width:340px}
+#motivPopup.show .motiv-content{animation:motivIn .45s ease}
+@keyframes motivIn{from{transform:scale(.92) translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.motiv-emoji{font-size:56px;margin-bottom:10px}
+.motiv-timer{font-size:44px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);line-height:1.1}
+.motiv-label{color:var(--text2);font-size:14px;margin-top:4px;margin-bottom:18px}
+.motiv-progress{margin:0 24px 8px}
+.motiv-day{font-size:14px;color:var(--text2);margin-bottom:22px}
+.motiv-quote{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 22px;margin:0 8px 26px;font-style:italic;font-size:15px;line-height:1.55;color:var(--text)}
+.motiv-dismiss{display:inline-flex;align-items:center;gap:8px;padding:16px 44px;
+  background:var(--accent);color:#070709;border-radius:50px;font-size:17px;font-weight:700;transition:transform .12s}
+.motiv-dismiss:active{transform:scale(.95)}
+.motiv-next{color:var(--text3);font-size:12px;margin-top:16px}
+
+/* Timer */
+.timer-display{text-align:center;padding:16px 0}
+.timer-big{font-size:52px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:-1px;line-height:1;
+  background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.timer-elapsed{font-size:13px;color:var(--text2);margin-top:6px;font-family:'DM Mono',monospace}
+.timer-phase{display:flex;align-items:center;gap:10px;margin-top:14px;justify-content:center}
+.phase-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.phase-name{font-weight:600;font-size:15px}
+.phase-desc{color:var(--text2);font-size:13px;text-align:center;margin-top:6px;line-height:1.5}
+.phase-tip{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;
+  margin-top:10px;font-size:12px;color:var(--text2);line-height:1.4}
+.phase-tip::before{content:'💡 ';font-style:normal}
+.day-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.day-dot{width:28px;height:28px;border-radius:50%;background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text3);
+  font-family:'DM Mono',monospace}
+.day-dot.done{background:var(--accent);color:#070709}
+.day-dot.current{background:var(--surface2);border:2px solid var(--accent);color:var(--accent)}
+.quick-motiv{text-align:center;padding:14px 24px;font-style:italic;color:var(--text2);font-size:14px;line-height:1.5;position:relative}
+.refresh-btn{position:absolute;top:8px;right:4px;font-size:16px;color:var(--text3);padding:6px}
+.not-started{text-align:center;padding:40px 20px;color:var(--text2)}
+.not-started .big-ico{font-size:64px;margin-bottom:16px}
+.interval-badge{display:inline-block;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600;margin-top:10px}
+.badge-fasting{background:rgba(110,231,183,.12);color:var(--accent)}
+.badge-eating{background:rgba(251,191,36,.12);color:var(--warn)}
+.completed-banner{text-align:center;padding:30px 20px}
+.completed-banner .big-ico{font-size:64px;margin-bottom:12px}
+
+/* Track */
+.water-track{text-align:center}
+.water-big{font-size:64px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);line-height:1}
+.water-unit{font-size:14px;color:var(--text2)}
+.water-btns{display:flex;gap:12px;justify-content:center;margin:14px 0}
+.water-btn{width:50px;height:50px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);
+  font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.water-btn:active{background:var(--accent);color:#070709;border-color:var(--accent)}
+.water-progress{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mood-btn{padding:10px 6px;background:var(--surface2);border:2px solid transparent;border-radius:var(--radius-sm);
+  text-align:center;font-size:12px;transition:all .15s}
+.mood-btn.sel{border-color:var(--accent);background:rgba(110,231,183,.08)}
+.mood-btn .mood-ico{font-size:22px;display:block;margin-bottom:3px}
+.symptom-grid{display:flex;flex-wrap:wrap;gap:8px}
+.symptom-btn{padding:7px 12px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;font-size:12px;transition:all .15s}
+.symptom-btn.sel{background:rgba(110,231,183,.12);border-color:var(--accent);color:var(--accent)}
+.elec-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.elec-row:last-child{border-bottom:none}
+.elec-check{width:22px;height:22px;accent-color:var(--accent);flex-shrink:0}
+.elec-info{flex:1}
+.weight-row{display:flex;gap:10px;align-items:flex-end}
+.weight-row input{flex:1}
+.weight-row .btn{flex-shrink:0}
+#weightCanvas{width:100%;height:110px;border-radius:var(--radius-sm);background:var(--surface2);margin-top:10px;display:block}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-item{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.stat-val{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
+.stat-label{font-size:11px;color:var(--text2);margin-top:3px}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge-item{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;opacity:.35;transition:opacity .3s}
+.badge-item.unlocked{opacity:1}
+.badge-item .b-ico{font-size:28px;display:block;margin-bottom:4px}
+.badge-item .b-name{font-size:10px;font-weight:600;line-height:1.2}
+.badge-item .b-date{font-size:9px;color:var(--text3);margin-top:3px}
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;padding:10px 0 16px}
+.tl-dot{position:absolute;left:-22px;top:13px;width:10px;height:10px;border-radius:50%;
+  background:var(--text3);border:2px solid var(--bg)}
+.tl-item.active .tl-dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.tl-item.passed .tl-dot{background:var(--accent2)}
+.tl-hour{font-size:12px;font-weight:600;color:var(--accent);font-family:'DM Mono',monospace}
+.tl-text{font-size:13px;color:var(--text2);margin-top:2px;line-height:1.4}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.hist-item:last-child{border-bottom:none}
+.hist-mode{font-weight:600;font-size:14px}
+.hist-date{font-size:12px;color:var(--text2)}
+.hist-dur{font-size:14px;font-family:'DM Mono',monospace;color:var(--accent)}
+
+/* Info */
+.info-section{margin-bottom:20px}
+.info-section h3{font-size:16px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.info-block{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px}
+.info-block h4{font-size:14px;font-weight:600;margin-bottom:6px;color:var(--accent)}
+.info-block p,.info-block li{font-size:13px;color:var(--text2);line-height:1.55}
+.info-block ul{padding-left:18px}
+.info-block li{margin-bottom:3px}
+.warn-box{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+.warn-box p{font-size:13px;color:var(--danger);line-height:1.5}
+.allowed-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.allowed-card{border-radius:var(--radius-sm);padding:14px}
+.allowed-card.yes{background:rgba(110,231,183,.06);border:1px solid rgba(110,231,183,.18)}
+.allowed-card.no{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.18)}
+.allowed-card h4{font-size:13px;font-weight:600;margin-bottom:8px}
+.allowed-card.yes h4{color:var(--accent)}
+.allowed-card.no h4{color:var(--danger)}
+.allowed-card li{font-size:12px;color:var(--text2);line-height:1.7;list-style:none}
+
+/* Menu */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;
+  border-bottom:1px solid var(--border);gap:12px}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1;min-width:0}
+.setting-name{font-size:14px;font-weight:500}
+.setting-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.toggle{width:48px;height:28px;border-radius:14px;background:var(--surface3);position:relative;
+  transition:background .2s;flex-shrink:0;cursor:pointer}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+  background:#fff;transition:transform .2s}
+.toggle.on::after{transform:translateX(20px)}
+.num-input{width:72px;text-align:center;padding:8px;font-size:14px;flex-shrink:0}
+.version-info{text-align:center;color:var(--text3);font-size:12px;margin-top:24px;padding:10px;line-height:1.6}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade-in{animation:fadeIn .25s ease}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Setup Screen -->
+<div id="setup" class="hidden">
+  <div style="flex:1">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:56px">💧</div>
+      <h1 class="setup-title">Fasten Tracker</h1>
+      <p class="setup-sub">Wähle deinen Fasten-Modus</p>
+    </div>
+    <div class="mode-grid" id="modeGrid"></div>
+    <div id="setupFields"></div>
+    <div class="setup-section">
+      <label class="setup-label">Startgewicht (optional, kg)</label>
+      <input type="number" id="setupWeight" placeholder="z.B. 85" step="0.1" min="30" max="300">
+    </div>
+    <div class="setup-section" style="display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-weight:500">Benachrichtigungen</div>
+      <div style="font-size:12px;color:var(--text2)">Motivation alle 30 Min.</div></div>
+      <div class="toggle on" id="setupNotifToggle"></div>
+    </div>
+  </div>
+  <button class="btn btn-accent btn-block" id="setupStartBtn" style="margin-top:16px;padding:16px;font-size:16px">
+    🚀 Fasten starten
+  </button>
+</div>
+
+<!-- Motivation Popup -->
+<div id="motivPopup">
+  <div class="motiv-backdrop"></div>
+  <div class="motiv-content">
+    <div class="motiv-emoji" id="mEmoji">💧</div>
+    <div class="motiv-timer mono" id="mTimer">00:00:00</div>
+    <div class="motiv-label" id="mLabel">verbleibend</div>
+    <div class="motiv-progress"><div class="progress-bar"><div class="progress-fill" id="mProgress"></div></div></div>
+    <div class="motiv-day" id="mDay"></div>
+    <div class="motiv-quote" id="mQuote"></div>
+    <button class="motiv-dismiss" id="mDismiss">💪 Weiter kämpfen!</button>
+    <div class="motiv-next" id="mNext"></div>
+  </div>
+</div>
+
+<!-- Tab Content -->
+<div class="tab-content" id="tabContent"></div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="timer"><span class="ico">⏱</span>Timer</button>
+  <button class="tab-btn" data-tab="track"><span class="ico">💧</span>Track</button>
+  <button class="tab-btn" data-tab="stats"><span class="ico">🏆</span>Stats</button>
+  <button class="tab-btn" data-tab="info"><span class="ico">📖</span>Info</button>
+  <button class="tab-btn" data-tab="menu"><span class="ico">⚙️</span>Menü</button>
+</div>
+</div>
+
+<script>
+/* ================================================================
+   FASTEN TRACKER v4.0 — Complete Single-File PWA
+   ================================================================ */
+
+/* ===== CONSTANTS ===== */
+const PHASES = [
+  {name:'Glykogen-Abbau',emoji:'🔥',color:'#60a5fa',hours:12,
+   desc:'Der Körper verbraucht seine Glykogenspeicher aus Leber und Muskeln. Hunger ist jetzt am stärksten.',
+   tip:'Viel Wasser trinken! 2-3L. Leichter Schwindel und Hunger sind normal und vergehen.'},
+  {name:'Fettverbrennung',emoji:'⚡',color:'#a78bfa',hours:24,
+   desc:'Glykogen wird knapp. Übergang zur Fettverbrennung beginnt. Erste Ketone werden produziert.',
+   tip:'Elektrolyte nicht vergessen: Salz, Kalium, Magnesium. Nicht überanstrengen.'},
+  {name:'Ketose',emoji:'🧪',color:'#f472b6',hours:48,
+   desc:'Volle Ketose erreicht! Fett ist jetzt die Hauptenergiequelle. Mentale Klarheit nimmt zu.',
+   tip:'Die härteste Hürde ist geschafft! Warmes Salzwasser hilft gegen Hunger.'},
+  {name:'Tiefe Ketose',emoji:'🧬',color:'#fb923c',hours:72,
+   desc:'Autophagie intensiviert sich. Zelluläre Reinigung auf Hochtouren. Wachstumshormon steigt stark.',
+   tip:'Geh spazieren, meditiere. Dein Körper heilt sich selbst. Genieße die Klarheit.'},
+  {name:'Autophagie-Peak',emoji:'✨',color:'#fbbf24',hours:120,
+   desc:'Maximale zelluläre Erneuerung. Stammzellregeneration beginnt. Entzündungswerte auf Minimum.',
+   tip:'Du bist ein Krieger! Über die Hälfte geschafft. Höre auf deinen Körper.'},
+  {name:'Stammzell-Reset',emoji:'🌱',color:'#34d399',hours:144,
+   desc:'Immunsystem wird grundlegend erneuert. Alte Zellen werden komplett durch neue ersetzt.',
+   tip:'Fast geschafft! Plane dein Refeed sorgfältig. Knochenbrühe besorgen.'},
+  {name:'Finisher',emoji:'🏆',color:'#6ee7b7',hours:168,
+   desc:'Legendäre Ausdauer! Maximale gesundheitliche Vorteile erreicht. Kompletter Immunsystem-Reset.',
+   tip:'Unglaublich! Bereite dich auf das sanfte Fastenbrechen vor. LANGSAM!'}
+];
+
+const BODY_TIMELINE = [
+  {h:0,title:'Fasten-Start',desc:'Blutzucker und Insulin beginnen zu sinken. Der Körper verbraucht die letzte Mahlzeit.'},
+  {h:4,title:'Postabsorptive Phase',desc:'Nahrung ist verdaut. Blutzucker stabilisiert sich. Leichte Hungergefühle möglich.'},
+  {h:8,title:'Glykogen-Nutzung',desc:'Leber-Glykogen wird aktiv abgebaut. Blutzucker wird stabil gehalten.'},
+  {h:12,title:'Ketogenese startet',desc:'Glykogenspeicher werden knapp. Erste Ketone produziert. Fettverbrennung beginnt.'},
+  {h:16,title:'Autophagie beginnt',desc:'Zelluläre Selbstreinigung startet. Beschädigte Proteine werden recycelt.'},
+  {h:18,title:'Fettverbrennung steigt',desc:'Signifikante Fettverbrennung aktiv. Wachstumshormon (HGH) steigt deutlich an.'},
+  {h:24,title:'Volle Ketose',desc:'Ketone als primäre Energiequelle. HGH bis zu 5x erhöht. Entzündungen sinken.'},
+  {h:36,title:'Autophagie intensiv',desc:'Zelluläre Reinigung auf Hochtouren. Beschädigte Organellen werden abgebaut.'},
+  {h:48,title:'Tiefe Ketose',desc:'Immunsystem-Reset beginnt. IGF-1 sinkt deutlich. Mentale Klarheit oft sehr hoch.'},
+  {h:72,title:'Stammzell-Aktivierung',desc:'Stammzellproduktion steigt. Immunsystem wird grundlegend erneuert.'},
+  {h:96,title:'Zelluläre Verjüngung',desc:'Maximale Autophagie. Alte Zellen werden systematisch durch neue ersetzt.'},
+  {h:120,title:'Tiefe Erneuerung',desc:'Stammzell-Reset voll aktiv. Immunsystem fast komplett erneuert.'},
+  {h:144,title:'Maximale Regeneration',desc:'Alle Regenerationsprozesse auf Maximum. Entzündungsmarker minimal.'},
+  {h:168,title:'7-Tage-Meilenstein',desc:'Legendär! Kompletter Immunsystem-Reset. Tiefste zelluläre Erneuerung erreicht.'}
+];
+
+const ACHIEVEMENTS = [
+  {id:'first',name:'Erster Schritt',emoji:'🌟',desc:'Erstes Fasten gestartet',
+   check:function(s){return s.configured}},
+  {id:'h12',name:'12 Stunden',emoji:'⏰',desc:'12h am Stück gefastet',
+   check:function(s,ms){return ms>=12*3600000}},
+  {id:'h24',name:'Ganzer Tag',emoji:'🌅',desc:'24h am Stück gefastet',
+   check:function(s,ms){return ms>=24*3600000}},
+  {id:'h48',name:'Ketose-König',emoji:'👑',desc:'48h gefastet',
+   check:function(s,ms){return ms>=48*3600000}},
+  {id:'h72',name:'3-Tage-Krieger',emoji:'⚔️',desc:'72h gefastet',
+   check:function(s,ms){return ms>=72*3600000}},
+  {id:'d5',name:'5-Tage-Held',emoji:'🦸',desc:'120h gefastet',
+   check:function(s,ms){return ms>=120*3600000}},
+  {id:'d7',name:'7-Tage-Legende',emoji:'🏆',desc:'168h gefastet',
+   check:function(s,ms){return ms>=168*3600000}},
+  {id:'hydro',name:'Hydrations-Held',emoji:'💧',desc:'10 Gläser an einem Tag',
+   check:function(s){var w=s.water||{};return Object.values(w).some(function(v){return v>=10})}},
+  {id:'comp3',name:'3x geschafft',emoji:'🎯',desc:'3 Fasten abgeschlossen',
+   check:function(s){return(s.history||[]).filter(function(h){return h.completed}).length>=3}},
+  {id:'jour5',name:'Tagebuch-Profi',emoji:'📝',desc:'5 Journal-Einträge',
+   check:function(s){return Object.keys(s.journal||{}).filter(function(k){return s.journal[k].length>0}).length>=5}},
+  {id:'mood7',name:'Stimmungs-Check',emoji:'🧠',desc:'7 Mood-Einträge',
+   check:function(s){return Object.keys(s.moods||{}).length>=7}},
+  {id:'weight5',name:'Gewichts-Tracker',emoji:'⚖️',desc:'5 Gewichtseinträge',
+   check:function(s){return Object.keys(s.weight||{}).length>=5}}
+];
+
+const SYMPTOMS = [
+  'Kopfschmerzen','Müdigkeit','Schwindel','Hunger','Frieren','Mental klar',
+  'Energiegeladen','Ruhig','Übelkeit','Krämpfe','Schlafprobleme','Gereizt'
+];
+
+const MOODS = [
+  {emoji:'💪',name:'Stark'},{emoji:'😤',name:'Kämpfe'},{emoji:'🧘',name:'Ruhig'},
+  {emoji:'😵',name:'Schwer'},{emoji:'🔥',name:'Motiviert'},{emoji:'😴',name:'Müde'}
+];
+
+const ELECS = [
+  {name:'Natrium',desc:'2-3g/Tag (Himalaya-Salz)',detail:'Im Wasser auflösen oder unter die Zunge. Verhindert Kopfschmerzen und Schwindel.'},
+  {name:'Kalium',desc:'1-2g/Tag (No-Salt/Lo-Salt)',detail:'KCl-Ersatzsalz verwenden. Wichtig für Herz und Muskeln. Mit Wasser verdünnen.'},
+  {name:'Magnesium',desc:'300-400mg/Tag (Citrat)',detail:'Magnesium-Citrat oder -Glycinat. Abends für besseren Schlaf. Gegen Krämpfe.'}
+];
+
+const QUOTES = {
+  morgen:[
+    'Ein neuer Tag, eine neue Chance stärker zu werden.',
+    'Der Morgen gehört denen, die an ihre Stärke glauben.',
+    'Dein Körper heilt sich gerade — genieße den Morgen.',
+    'Jeder Sonnenaufgang bringt dich deinem Ziel näher.',
+    'Guten Morgen, Krieger. Dein Körper dankt dir.',
+    'Die Morgenstille ist dein Verbündeter beim Fasten.',
+    'Heute wird ein guter Tag — du hast die Kontrolle.',
+    'Dein Stoffwechsel arbeitet für dich, während du aufwachst.',
+    'Mit jedem Morgen wirst du stärker und klarer.',
+    'Der frühe Vogel fastet — und heilt.',
+    'Starte den Tag mit Dankbarkeit für deine Disziplin.',
+    'Morgenroutine: Wasser, Salz, Stärke zeigen.'
+  ],
+  mittag:[
+    'Halbzeit! Du bist stärker als jeder Hunger.',
+    'Mittag ohne Essen? Du bist ein Held.',
+    'Dein Körper verbrennt gerade altes Fett als Kraftstoff.',
+    'Die Mittagszeit ist nur ein Moment — deine Stärke bleibt.',
+    'Andere essen, du heilst. Respekt!',
+    'Dein Körper hat umgeschaltet auf Fettverbrennung.',
+    'Lunch Break? Nein, Healing Break!',
+    'Die Ketone fließen — genieße die mentale Klarheit.',
+    'Jede überstandene Stunde ist ein Sieg.',
+    'Du beweist gerade, dass du stärker bist als Gewohnheit.'
+  ],
+  nachmittag:[
+    'Der Nachmittag ist die Prüfung — und du bestehst sie.',
+    'Bleib stark! Die schwierigsten Stunden sind bald vorbei.',
+    'Dein Körper recycelt gerade alte Zellen. Danke ihm.',
+    'Nachmittagstief? Trink Wasser und atme tief durch.',
+    'Du bist weiter als die meisten es je schaffen.',
+    'Autophagie arbeitet auf Hochtouren — bleib dran.',
+    'Ein Spaziergang hilft jetzt Wunder. Beweg dich!',
+    'Deine Zellen erneuern sich gerade — das ist Magie.',
+    'Der Hunger kommt in Wellen — und jede Welle geht vorbei.',
+    'Du machst das für dein zukünftiges Ich. Danke!',
+    'Dein Future-Self wird dir dankbar sein.',
+    'Oft ist es nur Salzmangel, nicht echter Hunger.'
+  ],
+  abend:[
+    'Der Abend naht — ein weiterer Tag geschafft!',
+    'Bald ist Schlafenszeit — im Fasten schläfst du tiefer.',
+    'Du hast heute unglaubliche Stärke bewiesen.',
+    'Der Abend ist die Belohnung für einen starken Tag.',
+    'Während andere Netflix schauen, heilst du dich.',
+    'Dein Wachstumshormon steigt — perfekt für die Nacht.',
+    'Ein Tag voller Disziplin — sei stolz auf dich.',
+    'Abendliche Ruhe, körperliche Heilung. Alles ist gut.',
+    'Die Nacht wird deine beste Fastenzeit.',
+    'Morgen wirst du dankbar sein, dass du durchgehalten hast.',
+    'Tag bezwungen. Du bist eine Maschine.',
+    'Tee, Augen zu, atmen. Du hast es verdient.'
+  ],
+  nacht:[
+    'Die Nacht gehört der Heilung — schlaf gut.',
+    'Im Schlaf heilt dein Körper am stärksten.',
+    'Mitternachts-Krieger: Die dunkelsten Stunden vor dem Licht.',
+    'Dein Körper arbeitet die ganze Nacht für dich.',
+    'Schlaf ist die beste Fastenwaffe.',
+    'In der Stille der Nacht geschieht die größte Transformation.',
+    'Nachtschicht für deine Zellen — Autophagie auf Maximum.',
+    'Träume von deinem stärkeren, gesünderen Ich.',
+    'Die Nacht vergeht — und du wirst stärker aufwachen.',
+    'Jede Stunde Schlaf im Fasten ist doppelt wertvoll.'
+  ]
+};
+
+const MODE_INFO = [
+  {id:'water',name:'Wasserfasten',emoji:'💧',desc:'Mehrtägig, nur Wasser'},
+  {id:'16:8',name:'16:8',emoji:'⏰',desc:'16h fasten, 8h essen'},
+  {id:'18:6',name:'18:6',emoji:'⏱',desc:'18h fasten, 6h essen'},
+  {id:'20:4',name:'20:4',emoji:'🔥',desc:'20h fasten, 4h essen'},
+  {id:'omad',name:'OMAD',emoji:'🍽',desc:'23h fasten, 1h essen'},
+  {id:'custom',name:'Custom',emoji:'⚙️',desc:'Eigene Stunden wählen'}
+];
+
+const INTERVAL_MAP = {'16:8':[16,8],'18:6':[18,6],'20:4':[20,4],'omad':[23,1]};
+
+/* ===== STATE ===== */
+var STORE_KEY = 'ft4';
+var S;
+
+function defaultState(){
+  return {
+    configured:false, mode:'water',
+    startDate:'', startTime:'00:00',
+    totalDays:7,
+    eatStart:'12:00', customHours:24,
+    notifyOn:true, notifyMin:30,
+    popupOn:true, soundOn:true,
+    water:{}, waterGoal:10,
+    weight:{}, startWeight:0,
+    moods:{}, symptoms:{}, journal:{},
+    elektrolyteChecks:{},
+    tab:'timer', mseed:0,
+    history:[], achievements:{}
+  };
+}
+
+function loadState(){
+  try {
+    var d = localStorage.getItem(STORE_KEY);
+    if (d) { S = Object.assign(defaultState(), JSON.parse(d)); }
+    else { S = defaultState(); }
+  } catch(e) { S = defaultState(); }
+}
+
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+function todayStr(){
+  return new Date().toISOString().slice(0, 10);
+}
+
+/* ===== AUDIO ===== */
+var audioCtx = null;
+
+function playChime(){
+  if (!S.soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var notes = [880, 1318.5, 1760]; // A5, E6, A6
+    var now = audioCtx.currentTime;
+    for (var i = 0; i < notes.length; i++) {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = notes[i];
+      gain.gain.setValueAtTime(0, now + i * 0.18);
+      gain.gain.linearRampToValueAtTime(0.15, now + i * 0.18 + 0.06);
+      gain.gain.linearRampToValueAtTime(0, now + i * 0.18 + 0.5);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.18);
+      osc.stop(now + i * 0.18 + 0.6);
+    }
+  } catch(e) {}
+}
+
+/* ===== HELPERS ===== */
+function getTimeOfDay(){
+  var h = new Date().getHours();
+  if (h >= 5 && h < 11) return 'morgen';
+  if (h >= 11 && h < 14) return 'mittag';
+  if (h >= 14 && h < 18) return 'nachmittag';
+  if (h >= 18 && h < 22) return 'abend';
+  return 'nacht';
+}
+
+function getRandomQuote(){
+  var tod = getTimeOfDay();
+  var arr = QUOTES[tod];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getSeededQuote(){
+  var tod = getTimeOfDay();
+  var arr = QUOTES[tod];
+  S.mseed = (S.mseed + 1) % arr.length;
+  save();
+  return arr[S.mseed];
+}
+
+function fmtDur(ms){
+  if (ms < 0) ms = 0;
+  var totalSec = Math.floor(ms / 1000);
+  var h = Math.floor(totalSec / 3600);
+  var m = Math.floor((totalSec % 3600) / 60);
+  var s = totalSec % 60;
+  return pad2(h) + ':' + pad2(m) + ':' + pad2(s);
+}
+
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+
+function fmtDurLong(ms){
+  if (ms < 0) ms = 0;
+  var totalH = ms / 3600000;
+  var d = Math.floor(totalH / 24);
+  var h = Math.floor(totalH % 24);
+  var m = Math.floor((ms % 3600000) / 60000);
+  var r = '';
+  if (d > 0) r += d + 'T ';
+  if (h > 0 || d > 0) r += h + 'h ';
+  r += m + 'min';
+  return r;
+}
+
+function fmtDateShort(isoStr){
+  if (!isoStr) return '-';
+  try {
+    var d = new Date(isoStr);
+    return d.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'2-digit'});
+  } catch(e) { return '-'; }
+}
+
+function $(id){ return document.getElementById(id); }
+
+/* ===== FASTING LOGIC ===== */
+function isInterval(){ return !!INTERVAL_MAP[S.mode]; }
+function isWater(){ return S.mode === 'water'; }
+function isCustom(){ return S.mode === 'custom'; }
+function isContinuous(){ return isWater() || isCustom(); }
+
+function getFastInfo(){
+  var now = Date.now();
+
+  if (isContinuous()) {
+    if (!S.startDate || !S.startTime) return {active:false};
+    var start = new Date(S.startDate + 'T' + S.startTime).getTime();
+    if (isNaN(start)) return {active:false};
+    var totalMs = isWater() ? (S.totalDays * 86400000) : (S.customHours * 3600000);
+    var elapsed = now - start;
+    if (elapsed < 0) return {active:true, started:false, start:start, totalMs:totalMs, type:'continuous'};
+    var remaining = totalMs - elapsed;
+    var progress = Math.min(Math.max(elapsed / totalMs, 0), 1);
+    var completed = elapsed >= totalMs;
+    var currentDay = Math.min(Math.floor(elapsed / 86400000) + 1, isWater() ? S.totalDays : Math.ceil(S.customHours / 24));
+    var totalDays = isWater() ? S.totalDays : Math.ceil(S.customHours / 24);
+    var elapsedH = elapsed / 3600000;
+
+    // Determine phase
+    var phaseIdx = 0;
+    for (var i = PHASES.length - 1; i >= 0; i--) {
+      if (elapsedH >= PHASES[i].hours) { phaseIdx = i; break; }
+    }
+
+    return {
+      active:true, started:true, start:start, elapsed:elapsed,
+      remaining:Math.max(remaining, 0), progress:progress, completed:completed,
+      totalMs:totalMs, currentDay:currentDay, totalDays:totalDays,
+      phase:PHASES[Math.min(phaseIdx, PHASES.length - 1)],
+      phaseIdx:phaseIdx, elapsedH:elapsedH, type:'continuous'
+    };
+  }
+
+  if (isInterval()) {
+    var pair = INTERVAL_MAP[S.mode];
+    var fastH = pair[0], eatH = pair[1];
+    var parts = S.eatStart.split(':');
+    var eatStartMin = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    var eatEndMin = (eatStartMin + eatH * 60) % 1440;
+
+    var nd = new Date();
+    var nowMin = nd.getHours() * 60 + nd.getMinutes();
+    var nowSec = nd.getSeconds();
+
+    var inEating = false;
+    if (eatEndMin > eatStartMin) {
+      inEating = (nowMin >= eatStartMin && nowMin < eatEndMin);
+    } else {
+      inEating = (nowMin >= eatStartMin || nowMin < eatEndMin);
+    }
+
+    var remaining2, windowTotal, progress2;
+    if (inEating) {
+      var minLeft = eatEndMin > nowMin ? eatEndMin - nowMin : (1440 - nowMin) + eatEndMin;
+      remaining2 = (minLeft * 60 - nowSec) * 1000;
+      windowTotal = eatH * 3600000;
+      progress2 = 1 - (remaining2 / windowTotal);
+    } else {
+      var minLeft2 = eatStartMin > nowMin ? eatStartMin - nowMin : (1440 - nowMin) + eatStartMin;
+      remaining2 = (minLeft2 * 60 - nowSec) * 1000;
+      windowTotal = fastH * 3600000;
+      progress2 = 1 - (remaining2 / windowTotal);
+    }
+
+    var elapsedWindow = windowTotal - remaining2;
+    var phase = inEating
+      ? {name:'Essens-Fenster', emoji:'🍽', color:'#fbbf24', desc:eatH + 'h Essen erlaubt. Iss nährstoffreiche Mahlzeiten.', tip:'Proteinreiche, vollwertige Nahrung bevorzugen.'}
+      : {name:'Fasten-Fenster', emoji:'🔥', color:'#6ee7b7', desc:fastH + 'h Fasten aktiv. Fettverbrennung läuft.', tip:'Wasser, schwarzer Kaffee und ungesüßter Tee sind erlaubt.'};
+
+    return {
+      active:true, started:true, elapsed:elapsedWindow,
+      remaining:Math.max(remaining2, 0),
+      progress:Math.min(Math.max(progress2, 0), 1),
+      completed:false, inEating:inEating, fastH:fastH, eatH:eatH,
+      type:'interval', phase:phase, phaseIdx:inEating ? -1 : 0,
+      elapsedH: elapsedWindow / 3600000
+    };
+  }
+
+  return {active:false};
+}
+
+function getPhaseColor(info){
+  if (!info || !info.phase) return 'var(--accent)';
+  return info.phase.color;
+}
+
+/* ===== ACHIEVEMENTS ===== */
+function checkAchievements(){
+  var info = getFastInfo();
+  var elapsed = (info.active && info.started && info.type === 'continuous') ? info.elapsed : 0;
+  // Also consider history
+  var maxHist = 0;
+  (S.history || []).forEach(function(h){ if (h.duration > maxHist) maxHist = h.duration; });
+  var checkMs = Math.max(elapsed, maxHist);
+
+  var changed = false;
+  ACHIEVEMENTS.forEach(function(a){
+    if (!S.achievements[a.id] && a.check(S, checkMs)) {
+      S.achievements[a.id] = {date: todayStr()};
+      changed = true;
+    }
+  });
+  if (changed) save();
+}
+
+/* ===== NOTIFICATIONS ===== */
+var motivTimer = null;
+var swReg = null;
+
+function startMotivInterval(){
+  clearInterval(motivTimer);
+  if (!S.notifyOn && !S.popupOn) return;
+  if (!S.configured) return;
+  var ms = S.notifyMin * 60000;
+  motivTimer = setInterval(function(){
+    triggerMotivation();
+  }, ms);
+}
+
+function triggerMotivation(){
+  var info = getFastInfo();
+  if (!info.active || !info.started) return;
+  if (info.completed) return;
+
+  if (document.visibilityState === 'visible' && S.popupOn) {
+    showMotivPopup(info);
+  } else if (S.notifyOn && swReg && swReg.active) {
+    var quote = getRandomQuote();
+    var timeStr = fmtDur(info.remaining);
+    swReg.active.postMessage({
+      type: 'SHOW_NOTIF',
+      body: timeStr + ' verbleibend — "' + quote + '"'
+    });
+  }
+}
+
+function showMotivPopup(info){
+  var popup = $('motivPopup');
+  var quote = getSeededQuote();
+
+  $('mTimer').textContent = fmtDur(info.remaining);
+  $('mLabel').textContent = info.type === 'interval'
+    ? (info.inEating ? 'Essens-Fenster endet' : 'Fasten endet')
+    : 'verbleibend';
+
+  var pf = $('mProgress');
+  pf.style.width = Math.round(info.progress * 100) + '%';
+  pf.style.backgroundColor = getPhaseColor(info);
+
+  if (info.type === 'continuous') {
+    $('mDay').textContent = 'Tag ' + info.currentDay + ' von ' + info.totalDays;
+  } else {
+    $('mDay').textContent = info.inEating
+      ? 'Essens-Fenster (' + info.eatH + 'h)'
+      : 'Fasten-Fenster (' + info.fastH + 'h)';
+  }
+
+  var emojis = ['💧','🔥','⚡','✨','🌟','💪','🧬','🏆'];
+  $('mEmoji').textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  $('mQuote').textContent = '\u201E' + quote + '\u201C';
+  $('mNext').textContent = 'Nächste Erinnerung in ' + S.notifyMin + ' Min.';
+
+  popup.classList.add('show');
+  playChime();
+  try { navigator.vibrate([200, 100, 200]); } catch(e) {}
+}
+
+function requestNotifPermission(){
+  if (!S.notifyOn) return;
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+/* ===== SETUP ===== */
+function renderSetupModes(){
+  var grid = $('modeGrid');
+  grid.innerHTML = '';
+  MODE_INFO.forEach(function(m){
+    var card = document.createElement('div');
+    card.className = 'mode-card' + (S.mode === m.id ? ' sel' : '');
+    card.innerHTML = '<div class="mode-ico">' + m.emoji + '</div><div class="mode-name">' + m.name + '</div><div class="mode-desc">' + m.desc + '</div>';
+    card.addEventListener('click', function(){
+      S.mode = m.id;
+      renderSetupModes();
+      renderSetupFields();
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderSetupFields(){
+  var f = $('setupFields');
+  f.innerHTML = '';
+
+  if (isWater()) {
+    f.innerHTML = '<div class="setup-section"><label class="setup-label">Startdatum</label>' +
+      '<input type="date" id="sfDate" value="' + (S.startDate || todayStr()) + '"></div>' +
+      '<div class="setup-section row">' +
+      '<div><label class="setup-label">Startzeit</label><input type="time" id="sfTime" value="' + (S.startTime || '00:00') + '"></div>' +
+      '<div><label class="setup-label">Dauer (Tage)</label><input type="number" id="sfDays" value="' + S.totalDays + '" min="1" max="30"></div></div>';
+  } else if (isInterval()) {
+    f.innerHTML = '<div class="setup-section"><label class="setup-label">Essens-Fenster beginnt um</label>' +
+      '<input type="time" id="sfEat" value="' + (S.eatStart || '12:00') + '"></div>';
+  } else if (isCustom()) {
+    f.innerHTML = '<div class="setup-section"><label class="setup-label">Startdatum</label>' +
+      '<input type="date" id="sfDate" value="' + (S.startDate || todayStr()) + '"></div>' +
+      '<div class="setup-section row">' +
+      '<div><label class="setup-label">Startzeit</label><input type="time" id="sfTime" value="' + (S.startTime || '00:00') + '"></div>' +
+      '<div><label class="setup-label">Fasten-Stunden</label><input type="number" id="sfCustom" value="' + S.customHours + '" min="1" max="720"></div></div>';
+  }
+}
+
+function showSetup(){
+  $('setup').classList.remove('hidden');
+  renderSetupModes();
+  renderSetupFields();
+}
+
+function hideSetup(){
+  $('setup').classList.add('hidden');
+}
+
+function doStartFast(){
+  if (isWater()) {
+    var d = document.getElementById('sfDate');
+    var t = document.getElementById('sfTime');
+    var days = document.getElementById('sfDays');
+    S.startDate = d ? d.value : todayStr();
+    S.startTime = t ? t.value : '00:00';
+    S.totalDays = days ? Math.max(1, Math.min(30, parseInt(days.value) || 7)) : 7;
+  } else if (isInterval()) {
+    var eat = document.getElementById('sfEat');
+    S.eatStart = eat ? eat.value : '12:00';
+  } else if (isCustom()) {
+    var d2 = document.getElementById('sfDate');
+    var t2 = document.getElementById('sfTime');
+    var ch = document.getElementById('sfCustom');
+    S.startDate = d2 ? d2.value : todayStr();
+    S.startTime = t2 ? t2.value : '00:00';
+    S.customHours = ch ? Math.max(1, Math.min(720, parseInt(ch.value) || 24)) : 24;
+  }
+
+  var wInput = $('setupWeight');
+  if (wInput && wInput.value) S.startWeight = parseFloat(wInput.value);
+
+  S.configured = true;
+  S.tab = 'timer';
+  save();
+  hideSetup();
+  requestNotifPermission();
+  startMotivInterval();
+  renderTab();
+  checkAchievements();
+}
+
+function endFast(){
+  var info = getFastInfo();
+  if (info.active && info.started && info.type === 'continuous') {
+    S.history.push({
+      mode: S.mode,
+      start: S.startDate + 'T' + S.startTime,
+      duration: info.elapsed,
+      completed: info.completed,
+      endDate: new Date().toISOString()
+    });
+  }
+  S.configured = false;
+  S.startDate = '';
+  S.startTime = '00:00';
+  save();
+  showSetup();
+}
+
+/* ===== TAB RENDERING ===== */
+function renderTab(){
+  var c = $('tabContent');
+  c.innerHTML = '';
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === S.tab);
+  });
+
+  switch(S.tab) {
+    case 'timer': renderTimer(c); break;
+    case 'track': renderTrack(c); break;
+    case 'stats': renderStats(c); break;
+    case 'info': renderInfo(c); break;
+    case 'menu': renderMenu(c); break;
+  }
+}
+
+/* ===== TIMER TAB ===== */
+function renderTimer(c){
+  var info = getFastInfo();
+
+  if (!S.configured || !info.active) {
+    c.innerHTML = '<div class="not-started fade-in"><div class="big-ico">💧</div>' +
+      '<h2 style="margin-bottom:8px">Kein aktives Fasten</h2>' +
+      '<p style="color:var(--text2);margin-bottom:20px">Starte ein neues Fasten über das Menü oder hier.</p>' +
+      '<button class="btn btn-accent" id="tStartBtn">🚀 Neues Fasten</button></div>';
+    c.querySelector('#tStartBtn').addEventListener('click', showSetup);
+    return;
+  }
+
+  if (info.active && !info.started) {
+    var startD = new Date(info.start);
+    c.innerHTML = '<div class="not-started fade-in"><div class="big-ico">🧘</div>' +
+      '<h2 style="margin-bottom:8px">Fasten startet bald</h2>' +
+      '<p style="color:var(--text2);margin-bottom:8px">Am ' + startD.toLocaleDateString('de-DE', {day:'numeric',month:'long'}) + ' um ' + S.startTime + '</p>' +
+      '<p style="color:var(--text3);font-size:13px">Genieße deine letzte Mahlzeit. Dann nur noch Wasser.</p></div>';
+    return;
+  }
+
+  if (info.completed && info.type === 'continuous') {
+    c.innerHTML = '<div class="completed-banner fade-in"><div class="big-ico">🎉</div>' +
+      '<h2 style="margin-bottom:8px;color:var(--accent)">Fasten abgeschlossen!</h2>' +
+      '<p style="color:var(--text2);margin-bottom:6px">' + fmtDurLong(info.totalMs) + ' geschafft!</p>' +
+      '<p style="color:var(--text2);margin-bottom:20px;font-size:13px">Denke an ein sanftes Refeed — siehe Info-Tab.</p>' +
+      '<button class="btn btn-accent" id="tEndBtn">✅ Fasten beenden & speichern</button></div>';
+    c.querySelector('#tEndBtn').addEventListener('click', endFast);
+    return;
+  }
+
+  var pct = Math.round(info.progress * 100);
+  var html = '<div class="fade-in">';
+
+  // Main timer card
+  html += '<div class="card"><div class="timer-display">';
+  html += '<div class="timer-big mono" id="tBig">' + fmtDur(info.remaining) + '</div>';
+  html += '<div class="timer-elapsed" id="tElapsed">⏱ ' + fmtDurLong(info.elapsed) + ' vergangen</div>';
+
+  if (info.type === 'interval') {
+    html += '<div style="text-align:center;margin-top:10px"><span class="interval-badge ' +
+      (info.inEating ? 'badge-eating' : 'badge-fasting') + '">' +
+      (info.inEating ? '🍽 Essens-Fenster' : '🔥 Fasten-Fenster') + '</span></div>';
+  }
+  html += '</div>';
+
+  // Progress
+  html += '<div class="progress-bar"><div class="progress-fill" id="tProgress" style="width:' + pct + '%;background-color:' + getPhaseColor(info) + '"></div></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:2px">';
+  html += '<span id="tPct">' + pct + '%</span>';
+  if (info.type === 'continuous') {
+    html += '<span>Tag ' + info.currentDay + ' / ' + info.totalDays + '</span>';
+  } else {
+    html += '<span>' + S.mode.toUpperCase() + '</span>';
+  }
+  html += '</div></div>';
+
+  // Phase card
+  html += '<div class="card" style="border-left:3px solid ' + info.phase.color + '">';
+  html += '<div class="timer-phase"><div class="phase-dot" style="background:' + info.phase.color + '"></div>';
+  html += '<span class="phase-name">' + info.phase.emoji + ' ' + info.phase.name + '</span></div>';
+  html += '<div class="phase-desc">' + info.phase.desc + '</div>';
+  html += '<div class="phase-tip">' + info.phase.tip + '</div></div>';
+
+  // Day dots (continuous, <=30 days)
+  if (info.type === 'continuous' && info.totalDays <= 30) {
+    html += '<div class="card"><div class="card-title">Tagesfortschritt</div><div class="day-dots">';
+    for (var d = 1; d <= info.totalDays; d++) {
+      var cls = d < info.currentDay ? 'done' : (d === info.currentDay ? 'current' : '');
+      html += '<div class="day-dot ' + cls + '">' + (d < info.currentDay ? '✓' : d) + '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // Quick motivation
+  html += '<div class="card"><div class="quick-motiv" id="qMotiv">';
+  html += '<button class="refresh-btn" id="refreshQ">🔄</button>';
+  html += '<em>\u201E' + getSeededQuote() + '\u201C</em></div></div>';
+
+  html += '</div>';
+  c.innerHTML = html;
+
+  var rBtn = c.querySelector('#refreshQ');
+  if (rBtn) {
+    rBtn.addEventListener('click', function(){
+      var em = c.querySelector('#qMotiv em');
+      if (em) em.textContent = '\u201E' + getSeededQuote() + '\u201C';
+    });
+  }
+}
+
+/* ===== TRACK TAB ===== */
+function renderTrack(c){
+  var d = todayStr();
+  var curWater = S.water[d] || 0;
+  var curWeight = S.weight[d] || '';
+  var curMood = S.moods[d] || '';
+  var curSym = S.symptoms[d] || [];
+  var curElec = S.elektrolyteChecks[d] || {};
+  var curJournal = S.journal[d] || '';
+
+  var html = '<div class="fade-in">';
+
+  // Water
+  var wp = Math.min(curWater / S.waterGoal, 1) * 100;
+  html += '<div class="card"><div class="card-title">💧 Wasser</div><div class="water-track">';
+  html += '<div class="water-big mono" id="waterNum">' + curWater + '</div>';
+  html += '<div class="water-unit">Gläser heute</div>';
+  html += '<div class="water-btns"><button class="water-btn" id="wMinus">\u2212</button><button class="water-btn" id="wPlus">+</button></div>';
+  html += '<div class="water-progress"><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:' + wp + '%;background:var(--accent)"></div></div>';
+  html += '<span>' + curWater + '/' + S.waterGoal + '</span></div>';
+  html += '</div></div>';
+
+  // Weight
+  html += '<div class="card"><div class="card-title">⚖️ Gewicht</div>';
+  html += '<div class="weight-row"><input type="number" id="wInput" placeholder="kg" step="0.1" value="' + curWeight + '">';
+  html += '<button class="btn btn-sm btn-accent" id="wSave">💾</button></div>';
+  html += '<canvas id="weightCanvas" width="600" height="220"></canvas></div>';
+
+  // Mood
+  html += '<div class="card"><div class="card-title">😊 Stimmung</div><div class="mood-grid">';
+  MOODS.forEach(function(m){
+    html += '<button class="mood-btn' + (curMood === m.name ? ' sel' : '') + '" data-mood="' + m.name + '">';
+    html += '<span class="mood-ico">' + m.emoji + '</span>' + m.name + '</button>';
+  });
+  html += '</div></div>';
+
+  // Symptoms
+  html += '<div class="card"><div class="card-title">📋 Symptome</div><div class="symptom-grid">';
+  SYMPTOMS.forEach(function(s){
+    html += '<button class="symptom-btn' + (curSym.indexOf(s) >= 0 ? ' sel' : '') + '" data-sym="' + s + '">' + s + '</button>';
+  });
+  html += '</div></div>';
+
+  // Elektrolyte
+  html += '<div class="card"><div class="card-title">⚡ Elektrolyte</div>';
+  ELECS.forEach(function(e){
+    html += '<div class="elec-row"><input type="checkbox" class="elec-check" data-elec="' + e.name + '"' + (curElec[e.name] ? ' checked' : '') + '>';
+    html += '<div class="elec-info"><div style="font-size:14px;font-weight:500">' + e.name + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3)">' + e.desc + '</div></div></div>';
+  });
+  html += '</div>';
+
+  // Journal
+  html += '<div class="card"><div class="card-title">📝 Tagesjournal</div>';
+  html += '<textarea id="jInput" placeholder="Wie fühlst du dich heute? Notizen, Gedanken...">' + escHtml(curJournal) + '</textarea>';
+  html += '<button class="btn btn-sm btn-accent" id="jSave" style="margin-top:10px">💾 Speichern</button></div>';
+
+  html += '</div>';
+  c.innerHTML = html;
+
+  // --- Event listeners ---
+  c.querySelector('#wPlus').addEventListener('click', function(){
+    S.water[d] = (S.water[d] || 0) + 1; save(); checkAchievements(); renderTab();
+  });
+  c.querySelector('#wMinus').addEventListener('click', function(){
+    S.water[d] = Math.max(0, (S.water[d] || 0) - 1); save(); renderTab();
+  });
+  c.querySelector('#wSave').addEventListener('click', function(){
+    var v = parseFloat(c.querySelector('#wInput').value);
+    if (!isNaN(v) && v > 0) { S.weight[d] = v; save(); checkAchievements(); drawWeightChart(); }
+  });
+
+  c.querySelectorAll('.mood-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      S.moods[d] = b.dataset.mood; save(); checkAchievements();
+      c.querySelectorAll('.mood-btn').forEach(function(x){ x.classList.toggle('sel', x.dataset.mood === b.dataset.mood); });
+    });
+  });
+
+  c.querySelectorAll('.symptom-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (!S.symptoms[d]) S.symptoms[d] = [];
+      var sym = b.dataset.sym;
+      var idx = S.symptoms[d].indexOf(sym);
+      if (idx >= 0) S.symptoms[d].splice(idx, 1);
+      else S.symptoms[d].push(sym);
+      save();
+      b.classList.toggle('sel');
+    });
+  });
+
+  c.querySelectorAll('.elec-check').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      if (!S.elektrolyteChecks[d]) S.elektrolyteChecks[d] = {};
+      S.elektrolyteChecks[d][cb.dataset.elec] = cb.checked;
+      save();
+    });
+  });
+
+  c.querySelector('#jSave').addEventListener('click', function(){
+    S.journal[d] = c.querySelector('#jInput').value;
+    save(); checkAchievements();
+    // brief visual feedback
+    var btn = c.querySelector('#jSave');
+    btn.textContent = '✅ Gespeichert!';
+    setTimeout(function(){ btn.textContent = '💾 Speichern'; }, 1500);
+  });
+
+  // Draw chart after DOM renders
+  setTimeout(drawWeightChart, 60);
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function drawWeightChart(){
+  var canvas = document.getElementById('weightCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var entries = Object.entries(S.weight).sort(function(a,b){ return a[0].localeCompare(b[0]); }).slice(-7);
+
+  if (entries.length < 2) {
+    ctx.fillStyle = '#55556a';
+    ctx.font = '14px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Mind. 2 Einträge für Diagramm', W / 2, H / 2);
+    return;
+  }
+
+  var vals = entries.map(function(e){ return e[1]; });
+  var minV = Math.min.apply(null, vals) - 0.5;
+  var maxV = Math.max.apply(null, vals) + 0.5;
+  var range = maxV - minV || 1;
+  var pad = {l:50, r:20, t:25, b:35};
+  var gw = W - pad.l - pad.r;
+  var gh = H - pad.t - pad.b;
+
+  // Grid lines
+  ctx.strokeStyle = '#222228';
+  ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.t + gh * (i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#55556a';
+    ctx.font = '12px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((maxV - range * (i / 4)).toFixed(1), pad.l - 8, y + 4);
+  }
+
+  // Line + area
+  var pts = [];
+  entries.forEach(function(e, idx){
+    var x = pad.l + (idx / (entries.length - 1)) * gw;
+    var yVal = pad.t + gh * (1 - (e[1] - minV) / range);
+    pts.push({x:x, y:yVal});
+  });
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, H - pad.b);
+  pts.forEach(function(p){ ctx.lineTo(p.x, p.y); });
+  ctx.lineTo(pts[pts.length - 1].x, H - pad.b);
+  ctx.closePath();
+  var grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+  grad.addColorStop(0, 'rgba(110,231,183,0.15)');
+  grad.addColorStop(1, 'rgba(110,231,183,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#6ee7b7';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  pts.forEach(function(p, i){ if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+  ctx.stroke();
+
+  // Dots
+  pts.forEach(function(p){
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fill();
+    ctx.strokeStyle = '#111114';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // Date labels
+  ctx.fillStyle = '#55556a';
+  ctx.font = '11px DM Sans, sans-serif';
+  ctx.textAlign = 'center';
+  entries.forEach(function(e, idx){
+    var x = pad.l + (idx / (entries.length - 1)) * gw;
+    ctx.fillText(e[0].slice(5), x, H - 10);
+  });
+}
+
+/* ===== STATS TAB ===== */
+function renderStats(c){
+  var info = getFastInfo();
+  var curElapsed = (info.active && info.started && info.type === 'continuous') ? info.elapsed : 0;
+  var totalFasted = (S.history || []).reduce(function(sum, h){ return sum + h.duration; }, 0) + curElapsed;
+  var completedCount = (S.history || []).filter(function(h){ return h.completed; }).length;
+  var waterVals = Object.values(S.water || {}).filter(function(v){ return v > 0; });
+  var waterAvg = waterVals.length ? Math.round(waterVals.reduce(function(a,b){return a+b},0) / waterVals.length * 10) / 10 : 0;
+
+  var html = '<div class="fade-in">';
+
+  // Overview stats
+  html += '<div class="card"><div class="card-title">📊 Übersicht</div><div class="stat-grid">';
+  html += '<div class="stat-item"><div class="stat-val">' + Math.round(totalFasted / 3600000) + '</div><div class="stat-label">Stunden gefastet</div></div>';
+  html += '<div class="stat-item"><div class="stat-val">' + completedCount + '</div><div class="stat-label">Abgeschlossen</div></div>';
+  html += '<div class="stat-item"><div class="stat-val">' + (S.history || []).length + '</div><div class="stat-label">Fasten gesamt</div></div>';
+  html += '<div class="stat-item"><div class="stat-val">' + waterAvg + '</div><div class="stat-label">\u2300 Gläser/Tag</div></div>';
+  html += '</div></div>';
+
+  // Achievements
+  html += '<div class="card"><div class="card-title">🏆 Erfolge (' + Object.keys(S.achievements).length + '/' + ACHIEVEMENTS.length + ')</div><div class="badge-grid">';
+  ACHIEVEMENTS.forEach(function(a){
+    var u = S.achievements[a.id];
+    html += '<div class="badge-item' + (u ? ' unlocked' : '') + '">';
+    html += '<span class="b-ico">' + a.emoji + '</span>';
+    html += '<div class="b-name">' + a.name + '</div>';
+    html += '<div class="b-date">' + (u ? u.date : '🔒') + '</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Body Timeline
+  html += '<div class="card"><div class="card-title">🧬 Körper-Timeline</div><div class="timeline">';
+  var elH = (info.active && info.started) ? info.elapsedH || 0 : 0;
+  for (var i = 0; i < BODY_TIMELINE.length; i++) {
+    var t = BODY_TIMELINE[i];
+    var nextH = (i < BODY_TIMELINE.length - 1) ? BODY_TIMELINE[i + 1].h : Infinity;
+    var passed = elH >= nextH;
+    var active = elH >= t.h && elH < nextH;
+    html += '<div class="tl-item' + (active ? ' active' : '') + (passed ? ' passed' : '') + '">';
+    html += '<div class="tl-dot"></div>';
+    html += '<div class="tl-hour">' + t.h + 'h — ' + t.title + '</div>';
+    html += '<div class="tl-text">' + t.desc + '</div></div>';
+  }
+  html += '</div></div>';
+
+  // History
+  if ((S.history || []).length > 0) {
+    html += '<div class="card"><div class="card-title">📜 Vergangene Fasten</div>';
+    var hist = S.history.slice().reverse();
+    hist.forEach(function(h){
+      var modeName = h.mode === 'water' ? '💧 Wasser' : h.mode;
+      html += '<div class="hist-item"><div><div class="hist-mode">' + modeName + '</div>';
+      html += '<div class="hist-date">' + fmtDateShort(h.start) + (h.completed ? ' ✅' : ' ⏹') + '</div></div>';
+      html += '<div class="hist-dur">' + fmtDurLong(h.duration) + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+/* ===== INFO TAB ===== */
+function renderInfo(c){
+  var html = '<div class="fade-in">';
+
+  // Body Timeline
+  html += '<div class="info-section"><h3>🧬 Körper-Timeline</h3>';
+  BODY_TIMELINE.forEach(function(t){
+    html += '<div class="info-block"><h4>' + t.h + 'h — ' + t.title + '</h4><p>' + t.desc + '</p></div>';
+  });
+  html += '</div>';
+
+  // Phases
+  html += '<div class="info-section"><h3>📊 Die 7 Fasten-Phasen</h3>';
+  PHASES.forEach(function(p){
+    html += '<div class="info-block" style="border-left:3px solid ' + p.color + '">';
+    html += '<h4>' + p.emoji + ' ' + p.name + ' (ab ' + p.hours + 'h)</h4>';
+    html += '<p>' + p.desc + '</p>';
+    html += '<p style="margin-top:4px;font-size:12px;color:var(--text3)">💡 ' + p.tip + '</p></div>';
+  });
+  html += '</div>';
+
+  // Allowed / Forbidden
+  html += '<div class="info-section"><h3>✅ Erlaubt / ❌ Verboten</h3><div class="allowed-grid">';
+  html += '<div class="allowed-card yes"><h4>✅ Erlaubt</h4><ul>';
+  ['Stilles Wasser','Mineralwasser','Schwarzer Kaffee','Ungesüßter Tee','Himalaya-Salz','Elektrolyte (ohne Zucker)','Apfelessig (verdünnt)'].forEach(function(item){
+    html += '<li>• ' + item + '</li>';
+  });
+  html += '</ul></div>';
+  html += '<div class="allowed-card no"><h4>❌ Verboten</h4><ul>';
+  ['Jede feste Nahrung','Zucker & Süßstoffe','Milch & Sahne','Brühe mit Fett','Alkohol','Softdrinks','Kalorien-Supplements'].forEach(function(item){
+    html += '<li>• ' + item + '</li>';
+  });
+  html += '</ul></div></div></div>';
+
+  // Elektrolyte Guide
+  html += '<div class="info-section"><h3>⚡ Elektrolyte-Guide</h3>';
+  html += '<div class="info-block"><h4>🧂 Natrium (Salz)</h4><p>2-3g täglich. Himalaya-Salz oder Meersalz in Wasser auflösen. Verhindert Kopfschmerzen, Schwindel und Müdigkeit. Bei Keto-Grippe-Symptomen mehr nehmen.</p></div>';
+  html += '<div class="info-block"><h4>⚡ Kalium</h4><p>1-2g täglich. No-Salt / Lo-Salt verwenden (KCl). Wichtig für Herzrhythmus und Muskelkraft. Immer mit viel Wasser verdünnen, nie pur!</p></div>';
+  html += '<div class="info-block"><h4>💊 Magnesium</h4><p>300-400mg täglich. Magnesium-Citrat oder -Glycinat. Hilft gegen Krämpfe, Schlafprobleme und Gereiztheit. Abends einnehmen.</p></div>';
+  html += '<div class="info-block"><h4>🥤 Snake Juice Rezept</h4><p>1L Wasser + 1 TL Himalaya-Salz + ½ TL No-Salt + ½ TL Natron. Über den Tag verteilt trinken. Alle Elektrolyte abgedeckt!</p></div>';
+  html += '</div>';
+
+  // Refeed Protocol
+  html += '<div class="info-section"><h3>🍎 Refeed-Protokoll</h3>';
+  html += '<div class="info-block"><h4>Schritt 1: Knochenbrühe (Stunde 0-2)</h4><p>Beginne mit warmer Knochenbrühe. Kleine Schlucke. Nicht mehr als 200ml. Dein Magen muss sich erst wieder aktivieren.</p></div>';
+  html += '<div class="info-block"><h4>Schritt 2: Leichte Suppe (Stunde 2-4)</h4><p>Gemüsesuppe ohne große Stücke. Avocado ist ideal als erste feste Nahrung. Keine Milchprodukte.</p></div>';
+  html += '<div class="info-block"><h4>Schritt 3: Weiches Gemüse (Stunde 4-8)</h4><p>Gekochtes Gemüse, Avocado, kleine Portion. Kein rohes Gemüse oder Obst — zu viel Ballaststoffe.</p></div>';
+  html += '<div class="info-block"><h4>Schritt 4: Erste Mahlzeit (Stunde 8-12)</h4><p>Kleine Portion mit Protein. Eier, Fisch, leichtes Hühnchen. Sehr langsam kauen!</p></div>';
+  html += '<div class="info-block"><h4>Schritt 5: Normal essen (Tag 2-3)</h4><p>Portionen langsam steigern. Zucker und verarbeitete Lebensmittel weiter meiden. Auf den Körper hören.</p></div>';
+  html += '<div class="warn-box"><p>⛔ <strong>NICHT als Erstes:</strong> Fleisch, Milchprodukte, Nüsse, rohes Gemüse, Brot, Zucker, Alkohol, große Portionen. Refeeding-Syndrom ist bei langem Fasten eine reale Gefahr!</p></div>';
+  html += '</div>';
+
+  // Intervallfasten
+  html += '<div class="info-section"><h3>⏰ Intervallfasten-Modi</h3>';
+  html += '<div class="info-block"><h4>16:8 — Anfänger-freundlich</h4><p>16 Stunden fasten, 8 Stunden Essens-Fenster. Ideal für den Einstieg ins Intervallfasten. Typisch: 12:00-20:00 Uhr essen. Bereits nach 12h beginnt die Fettverbrennung.</p></div>';
+  html += '<div class="info-block"><h4>18:6 — Fortgeschritten</h4><p>18 Stunden fasten, 6 Stunden essen. Mehr Autophagie-Benefits als 16:8. Typisch: 12:00-18:00 Uhr essen. Zwei Mahlzeiten pro Tag.</p></div>';
+  html += '<div class="info-block"><h4>20:4 — Warrior Diet</h4><p>20 Stunden fasten, 4 Stunden essen. Starke Fettverbrennung und Autophagie. Typisch: 16:00-20:00 Uhr essen. Ein großes Abendessen.</p></div>';
+  html += '<div class="info-block"><h4>OMAD — One Meal A Day</h4><p>23 Stunden fasten, 1 Stunde essen. Maximale Fasten-Benefits in einem täglichen Rhythmus. Eine große, sehr nährstoffreiche Mahlzeit pro Tag. Auf ausreichend Kalorien achten!</p></div>';
+  html += '</div>';
+
+  // Warning signs
+  html += '<div class="info-section"><h3>⚠️ Warnzeichen — Sofort abbrechen!</h3>';
+  html += '<div class="warn-box"><p>🔴 <strong>Starke Brustschmerzen</strong> oder anhaltendes Herzrasen</p></div>';
+  html += '<div class="warn-box"><p>🔴 <strong>Ohnmacht oder starker Schwindel</strong> der nicht besser wird</p></div>';
+  html += '<div class="warn-box"><p>🔴 <strong>Verwirrtheit</strong> oder Desorientierung</p></div>';
+  html += '<div class="warn-box"><p>🔴 <strong>Starke Bauchschmerzen</strong> oder anhaltendes Erbrechen</p></div>';
+  html += '<div class="warn-box"><p>🔴 <strong>Atemnot</strong> die nicht vorbeigeht</p></div>';
+  html += '<div class="info-block"><h4>🟡 Normal und kein Grund zur Sorge:</h4><p>Leichte Kopfschmerzen (Elektrolyte!), Müdigkeit in den ersten 2-3 Tagen, Frösteln, Hunger in Wellen, leichter Schwindel beim Aufstehen (langsam aufstehen!). Diese Symptome vergehen meist.</p></div>';
+  html += '</div>';
+
+  html += '<div style="text-align:center;color:var(--text3);font-size:11px;padding:16px;line-height:1.5">Diese Informationen ersetzen keine ärztliche Beratung.<br>Bei Vorerkrankungen immer Arzt konsultieren.</div>';
+
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+/* ===== MENU TAB ===== */
+function renderMenu(c){
+  var html = '<div class="fade-in">';
+
+  // Notification settings
+  html += '<div class="card"><div class="card-title">🔔 Benachrichtigungen</div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Push-Nachrichten</div><div class="setting-desc">Wenn App im Hintergrund ist</div></div>';
+  html += '<div class="toggle' + (S.notifyOn ? ' on' : '') + '" id="togNotify"></div></div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Motivation-Popup</div><div class="setting-desc">Vollbild-Overlay wenn App aktiv</div></div>';
+  html += '<div class="toggle' + (S.popupOn ? ' on' : '') + '" id="togPopup"></div></div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Sound-Effekt</div><div class="setting-desc">Glockenspiel bei Motivation</div></div>';
+  html += '<div class="toggle' + (S.soundOn ? ' on' : '') + '" id="togSound"></div></div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Intervall (Minuten)</div><div class="setting-desc">Abstand zwischen Erinnerungen</div></div>';
+  html += '<input type="number" class="num-input" id="notifMin" value="' + S.notifyMin + '" min="5" max="240"></div>';
+  html += '</div>';
+
+  // Water goal
+  html += '<div class="card"><div class="card-title">💧 Einstellungen</div>';
+  html += '<div class="setting-row"><div class="setting-info"><div class="setting-name">Wasserziel (Gläser/Tag)</div></div>';
+  html += '<input type="number" class="num-input" id="waterGoalIn" value="' + S.waterGoal + '" min="1" max="30"></div>';
+  html += '</div>';
+
+  // Actions
+  html += '<div class="card"><div class="card-title">⚡ Aktionen</div>';
+  if (S.configured) {
+    html += '<button class="btn btn-surface btn-block" id="menuEnd" style="margin-bottom:10px">⏹ Aktuelles Fasten beenden</button>';
+  }
+  html += '<button class="btn btn-surface btn-block" id="menuNew" style="margin-bottom:10px">🆕 Neues Fasten / Modus ändern</button>';
+  html += '<button class="btn btn-surface btn-block" id="menuExport" style="margin-bottom:10px">📦 Daten exportieren (JSON)</button>';
+  html += '<button class="btn btn-danger btn-block" id="menuReset">🗑 Alle Daten löschen</button>';
+  html += '</div>';
+
+  // Version
+  html += '<div class="version-info">Fasten Tracker v4.0<br>Made with 💚 für bessere Gesundheit<br><span style="font-size:10px;color:var(--text3)">PWA — Installierbar via Chrome</span></div>';
+
+  html += '</div>';
+  c.innerHTML = html;
+
+  // Event listeners
+  c.querySelector('#togNotify').addEventListener('click', function(){
+    S.notifyOn = !S.notifyOn;
+    if (S.notifyOn) requestNotifPermission();
+    save(); startMotivInterval(); renderTab();
+  });
+  c.querySelector('#togPopup').addEventListener('click', function(){
+    S.popupOn = !S.popupOn; save(); startMotivInterval(); renderTab();
+  });
+  c.querySelector('#togSound').addEventListener('click', function(){
+    S.soundOn = !S.soundOn; save(); renderTab();
+  });
+
+  c.querySelector('#notifMin').addEventListener('change', function(){
+    S.notifyMin = Math.max(5, Math.min(240, parseInt(this.value) || 30));
+    this.value = S.notifyMin;
+    save(); startMotivInterval();
+  });
+  c.querySelector('#waterGoalIn').addEventListener('change', function(){
+    S.waterGoal = Math.max(1, Math.min(30, parseInt(this.value) || 10));
+    this.value = S.waterGoal;
+    save();
+  });
+
+  var endBtn = c.querySelector('#menuEnd');
+  if (endBtn) {
+    endBtn.addEventListener('click', function(){
+      if (confirm('Aktuelles Fasten wirklich beenden und speichern?')) endFast();
+    });
+  }
+  c.querySelector('#menuNew').addEventListener('click', showSetup);
+
+  c.querySelector('#menuExport').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'fasten-tracker-' + todayStr() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  c.querySelector('#menuReset').addEventListener('click', function(){
+    if (confirm('Wirklich ALLE Daten unwiderruflich löschen?')) {
+      localStorage.removeItem(STORE_KEY);
+      S = defaultState();
+      save();
+      showSetup();
+    }
+  });
+}
+
+/* ===== TICKER (1s timer updates, no DOM rebuild) ===== */
+var tickerInterval = null;
+
+function startTicker(){
+  clearInterval(tickerInterval);
+  tickerInterval = setInterval(function(){
+    if (S.tab !== 'timer' || !S.configured) return;
+    var info = getFastInfo();
+    if (!info.active || !info.started) return;
+
+    // Check for completion transition
+    if (info.completed && info.type === 'continuous') {
+      renderTab();
+      return;
+    }
+
+    var tb = document.getElementById('tBig');
+    var tp = document.getElementById('tProgress');
+    var tPct = document.getElementById('tPct');
+    var tEl = document.getElementById('tElapsed');
+
+    if (tb) tb.textContent = fmtDur(info.remaining);
+    if (tp) {
+      var pct = Math.round(info.progress * 100);
+      tp.style.width = pct + '%';
+      tp.style.backgroundColor = getPhaseColor(info);
+      if (tPct) tPct.textContent = pct + '%';
+    }
+    if (tEl) tEl.textContent = '⏱ ' + fmtDurLong(info.elapsed) + ' vergangen';
+
+    checkAchievements();
+  }, 1000);
+}
+
+/* ===== SERVICE WORKER ===== */
+function registerSW(){
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      swReg = reg;
+      // Periodically check for updates
+      setInterval(function(){ reg.update(); }, 300000);
+    }).catch(function(e){
+      console.warn('SW registration failed:', e);
+    });
+  }
+}
+
+/* ===== INIT ===== */
+function init(){
+  loadState();
+  registerSW();
+
+  // Tab bar listeners
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      S.tab = btn.dataset.tab;
+      save();
+      renderTab();
+    });
+  });
+
+  // Setup start button
+  $('setupStartBtn').addEventListener('click', doStartFast);
+
+  // Setup notification toggle
+  var setupNotifEl = $('setupNotifToggle');
+  var setupNotifOn = true;
+  setupNotifEl.addEventListener('click', function(){
+    setupNotifOn = !setupNotifOn;
+    setupNotifEl.classList.toggle('on', setupNotifOn);
+    S.notifyOn = setupNotifOn;
+  });
+
+  // Motivation popup dismiss
+  $('mDismiss').addEventListener('click', function(){
+    $('motivPopup').classList.remove('show');
+  });
+  document.querySelector('.motiv-backdrop').addEventListener('click', function(){
+    $('motivPopup').classList.remove('show');
+  });
+
+  // Initial render
+  if (!S.configured) {
+    showSetup();
+  } else {
+    hideSetup();
+    requestNotifPermission();
+  }
+
+  renderTab();
+  startTicker();
+  startMotivInterval();
+}
+
+// Ensure audio context can be created on user interaction
+document.addEventListener('click', function initAudio(){
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}, {once: true});
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
