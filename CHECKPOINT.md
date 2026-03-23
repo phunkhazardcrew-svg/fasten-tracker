@@ -3,38 +3,99 @@
 ## Projekt
 - **Pfad**: `~/Schreibtisch/Coding/FASTEN_TRACKER/`
 - **Branch**: `main`
-- **Letzter Commit**: `78dd3b1` — feat: Complete rewrite — Fasten Tracker v4.0 PWA
+- **Letzter Commit**: `0daf75a` — feat: Premium Visual Polish v7.5
+- **GitHub**: `https://github.com/phunkhazardcrew-svg/fasten-tracker`
+- **Live-URL**: `https://phunkhazardcrew-svg.github.io/fasten-tracker/`
 - **Datum**: 2026-03-17
 
-## Status: v4.0 Complete Rewrite FERTIG
-
-### Was wurde gemacht
-- **index.html** komplett neu geschrieben (1504 Zeilen, single-file PWA)
-- **sw.js** aktualisiert auf fasten-v4 mit Offline-Fallback
-- **manifest.json** aktualisiert mit korrekten Icons und Metadaten
-
-### Implementierte Features
-1. **6 Fasten-Modi**: Wasserfasten (1-30 Tage), 16:8, 18:6, 20:4, OMAD, Custom
-2. **Motivation-Popup**: Vollbild-Overlay alle 30min (konfigurierbar 5-240min), Web Audio Chime (A5→E6→A6), Vibration, Blur-Backdrop
-3. **5 Tabs**: Timer, Track, Stats, Info, Menü
-4. **Timer-Tab**: Countdown, Fortschrittsbalken, Phasen-Anzeige, Tagespunkte, Motivations-Zitat
-5. **Track-Tab**: Wasser (+/- Buttons, Tagesziel), Gewicht (Canvas-Sparkline), 6 Stimmungen, 12 Symptome, Elektrolyte-Checkliste, Journal
-6. **Stats-Tab**: Übersicht (Stunden, Streak, Abgeschlossen, Wasser-Avg), 12 Achievements, Körper-Timeline (14 Marker), Fasten-History
-7. **Info-Tab**: Körper-Timeline, 7 Phasen, Erlaubt/Verboten, Elektrolyte-Guide, Refeed-Protokoll, Intervallfasten-Modi, Warnzeichen
-8. **Menü-Tab**: Notification/Popup/Sound Toggles, Intervall-Setting, Wasserziel, JSON-Export, Reset
-9. **50+ Motivations-Zitate** (5 Tageszeiten)
-10. **Push-Notifications** via Service Worker wenn App im Hintergrund
-11. **Offline-fähig**, installierbar als PWA
+## Status: v7.5 — Feature-Complete Premium PWA
 
 ### Technisch
-- Alles in einer Datei (HTML+CSS+JS)
+- Single-File PWA: `index.html` (3290 Zeilen, ~120KB)
 - localStorage Key: `ft4`
-- 1-Sekunden-Ticker nur Text-Updates, kein DOM-Rebuild
-- Google Fonts: DM Sans + DM Mono
-- Dark Theme, mobile-first, safe-area Support
-- Server: `python3 -m http.server 8090` im Projektordner
+- Service Worker: `sw.js` (fasten-v4)
+- Manifest: `manifest.json` (SVG icons, standalone)
+- GitHub Pages Workflow: `.github/workflows/pages.yml`
+- Server lokal: `python3 -m http.server 8090`
+
+### Feature-Übersicht (40+ Features)
+
+**Timer-Tab:**
+- SVG Fortschritts-Ring mit Glow-Animation
+- Autophagie-Meter (6 Stufen, 0-100%)
+- Nächster Meilenstein mit ETA
+- Quick-Water Tracker (+/-)
+- Tages-Zusammenfassung (Stimmung/Elektrolyte/Journal)
+- Tagesziel-Checkliste (5 Daily Goals)
+- Atemübung (4-7-8 Technik)
+- Ambient Sounds (Regen/Ozean/Wald)
+- Notfall-Button mit Checkliste
+- Countdown bis nächste Mahlzeit (Intervallfasten)
+- Motivations-Zitat mit Typewriter-Effekt
+
+**Track-Tab:**
+- Wasser-Tracker mit Animation
+- Koffein-Tracker (Tassen-Icons)
+- Urin-Farb-Check (6 Stufen)
+- Gewichts-Tracker mit Sparkline-Chart
+- Stimmungs-Tracker (6 Moods)
+- Symptom-Tracker (12 Symptome)
+- Schlaf-Tracker (Stunden + 5-Sterne Qualität)
+- Elektrolyte-Checkliste (Na/K/Mg)
+- Tagesjournal
+
+**Stats-Tab:**
+- Übersicht (Stunden/Streak/Abgeschlossen/Wasser)
+- Kalorienersparnis + Geld-Ersparnis (€)
+- Stimmungsverlauf (14-Tage Canvas-Chart)
+- Wasser-Balkendiagramm (7 Tage)
+- Gewichts-Delta + Prognose (Lineare Regression)
+- 18 Achievements mit Fortschrittsbalken
+- Körper-Timeline (14 Marker)
+- Aktivitäts-Kalender (5-Wochen Heatmap)
+- Vergangene Fasten Historie
+- Wochenbericht-Generator
+- Teilen-Button
+
+**Info-Tab:**
+- Körper-Timeline, 7 Phasen, Erlaubt/Verboten
+- Elektrolyte-Guide mit Snake Juice Rezept
+- Refeed-Protokoll mit Rezepten
+- Warnzeichen, Intervallfasten-Modi erklärt
+- Fastenplan-Vorlagen (3 Pläne)
+
+**Menü-Tab:**
+- Push/Popup/Sound Toggles
+- 3 Sound-Typen (Glockenspiel/Tropfen/Gong)
+- 3 Vibrations-Muster (Sanft/Normal/Stark)
+- 6 Akzentfarben wählbar
+- Dark/Light Theme Toggle
+- Wasserziel, Mahlzeitkosten, Kalorien Settings
+- Neues Fasten / Modus ändern
+- JSON Export + Import
+- Daten löschen
+- Hunger-Tipps
+
+**System:**
+- Push-Notifications via Service Worker
+- Motivation-Popup alle 30min (konfigurierbar)
+- Shake-to-Motivate (Handy schütteln)
+- Konfetti bei Achievements + Fasten-Abschluss
+- Toast-Benachrichtigungen
+- Konami Code Easter Egg
+- 15+ Animationen und Effekte
+- Glassmorphism Design
+- Offline-fähig, installierbar als PWA
+
+### 6 Fasten-Modi
+Wasserfasten (1-30 Tage), 16:8, 18:6, 20:4, OMAD, Custom
+
+### 18 Achievements
+first, h12, h24, h48, h72, d5, d7, h168, hydro, comp3, jour5,
+mood7, weight5, streak3, streak5, sleep8, alltrack, water7
 
 ## Notizen für Wiederaufnahme
-- App ist funktionsfähig und testbereit
-- User geht jetzt laufen, danach weiter
-- Mögliche nächste Schritte: Testen auf dem Handy, Bugfixes, UI-Polish, ggf. weitere Features
+- GitHub Pages Deploy-Workflow committed, Push muss noch manuell erfolgen
+- Nach Push: ~2 Min warten bis GitHub Pages live ist
+- Live-URL zum Testen: https://phunkhazardcrew-svg.github.io/fasten-tracker/
+- PWA-Installation: Chrome auf Android → "Zum Startbildschirm hinzufügen"
